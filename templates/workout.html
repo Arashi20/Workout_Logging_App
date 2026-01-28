@@ -25,7 +25,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="exercise_name">Exercise</label>
-                    <input type="text" id="exercise_name" name="exercise_name" list="exercises" required>
+                    <input type="text" id="exercise_name" name="exercise_name" list="exercises" minlength="2" required>
                     <datalist id="exercises">
                         {% for exercise in exercises %}
                         <option value="{{ exercise.name }}">

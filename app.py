@@ -104,10 +104,38 @@ def add_set():
         flash('Please start a workout session first', 'error')
         return redirect(url_for('workout'))
     
-    exercise_name = request.form.get('exercise_name')
+    exercise_name = request.form.get('exercise_name', '').strip()
     reps = request.form.get('reps')
     weight = request.form.get('weight')
     set_type = request.form.get('set_type', 'working')
+    
+    # Validate input
+    if not exercise_name or len(exercise_name) < 2:
+        flash('Exercise name must be at least 2 characters', 'error')
+        return redirect(url_for('workout'))
+    
+    try:
+        reps_int = int(reps)
+        if reps_int < 1 or reps_int > 1000:
+            flash('Reps must be between 1 and 1000', 'error')
+            return redirect(url_for('workout'))
+    except (ValueError, TypeError):
+        flash('Invalid reps value', 'error')
+        return redirect(url_for('workout'))
+    
+    weight_float = None
+    if weight:
+        try:
+            weight_float = float(weight)
+            if weight_float < 0 or weight_float > 10000:
+                flash('Weight must be between 0 and 10000 kg', 'error')
+                return redirect(url_for('workout'))
+        except (ValueError, TypeError):
+            flash('Invalid weight value', 'error')
+            return redirect(url_for('workout'))
+    
+    # Normalize exercise name to title case
+    exercise_name = exercise_name.title()
     
     # Get or create exercise
     exercise = Exercise.query.filter_by(name=exercise_name).first()
@@ -129,16 +157,16 @@ def add_set():
         session_id=active_session.id,
         exercise_id=exercise.id,
         set_number=set_number,
-        reps=int(reps),
-        weight=float(weight) if weight else None,
+        reps=reps_int,
+        weight=weight_float,
         set_type=set_type
     )
     db.session.add(workout_log)
     db.session.commit()
     
     # Update PR if applicable
-    if set_type == 'working' and weight:
-        update_pr(current_user.id, exercise.id, float(weight), int(reps))
+    if set_type == 'working' and weight_float:
+        update_pr(current_user.id, exercise.id, weight_float, reps_int)
     
     flash('Set added successfully!', 'success')
     return redirect(url_for('workout'))
@@ -194,14 +222,19 @@ def programs():
 @app.route('/programs/add', methods=['POST'])
 @login_required
 def add_program():
-    name = request.form.get('name')
-    description = request.form.get('description')
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
     program_type = request.form.get('program_type')
+    
+    # Validate program name
+    if not name or len(name) < 2:
+        flash('Program name must be at least 2 characters', 'error')
+        return redirect(url_for('programs'))
     
     program = WorkoutProgram(
         user_id=current_user.id,
         name=name,
-        description=description,
+        description=description if description else None,
         program_type=program_type
     )
     db.session.add(program)
@@ -213,11 +246,14 @@ def add_program():
 @app.route('/programs/delete/<int:program_id>', methods=['POST'])
 @login_required
 def delete_program(program_id):
-    program = WorkoutProgram.query.get_or_404(program_id)
-    if program.user_id == current_user.id:
-        db.session.delete(program)
-        db.session.commit()
-        flash('Program deleted successfully!', 'success')
+    program = WorkoutProgram.query.filter_by(id=program_id, user_id=current_user.id).first()
+    if not program:
+        flash('Program not found or access denied', 'error')
+        return redirect(url_for('programs'))
+    
+    db.session.delete(program)
+    db.session.commit()
+    flash('Program deleted successfully!', 'success')
     return redirect(url_for('programs'))
 
 @app.route('/weight-tracker')
@@ -233,11 +269,45 @@ def add_weight_log():
     body_fat = request.form.get('body_fat_percentage')
     visceral_fat = request.form.get('visceral_fat')
     
+    # Validate weight
+    try:
+        weight_float = float(weight)
+        if weight_float <= 0 or weight_float > 500:
+            flash('Weight must be between 0 and 500 kg', 'error')
+            return redirect(url_for('weight_tracker'))
+    except (ValueError, TypeError):
+        flash('Invalid weight value', 'error')
+        return redirect(url_for('weight_tracker'))
+    
+    # Validate body fat percentage
+    body_fat_float = None
+    if body_fat:
+        try:
+            body_fat_float = float(body_fat)
+            if body_fat_float < 0 or body_fat_float > 100:
+                flash('Body fat percentage must be between 0 and 100', 'error')
+                return redirect(url_for('weight_tracker'))
+        except (ValueError, TypeError):
+            flash('Invalid body fat percentage value', 'error')
+            return redirect(url_for('weight_tracker'))
+    
+    # Validate visceral fat
+    visceral_fat_float = None
+    if visceral_fat:
+        try:
+            visceral_fat_float = float(visceral_fat)
+            if visceral_fat_float < 0 or visceral_fat_float > 100:
+                flash('Visceral fat must be between 0 and 100', 'error')
+                return redirect(url_for('weight_tracker'))
+        except (ValueError, TypeError):
+            flash('Invalid visceral fat value', 'error')
+            return redirect(url_for('weight_tracker'))
+    
     weight_log = WeightLog(
         user_id=current_user.id,
-        weight=float(weight),
-        body_fat_percentage=float(body_fat) if body_fat else None,
-        visceral_fat=float(visceral_fat) if visceral_fat else None
+        weight=weight_float,
+        body_fat_percentage=body_fat_float,
+        visceral_fat=visceral_fat_float
     )
     db.session.add(weight_log)
     db.session.commit()
@@ -285,4 +355,6 @@ def create_admin():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    # Only enable debug mode if explicitly set via environment variable
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode)
