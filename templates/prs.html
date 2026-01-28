@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Personal Records - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="prs-container">
+    <h1>Personal Records 🏆</h1>
+
+    {% if prs %}
+    <div class="prs-list">
+        {% for pr in prs %}
+        <div class="pr-card">
+            <div class="pr-header">
+                <h3>{{ pr.exercise.name }}</h3>
+                <span class="pr-date">{{ pr.achieved_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+            <div class="pr-details">
+                <span class="pr-weight">{{ pr.weight }} kg</span>
+                <span class="pr-reps">× {{ pr.reps }} reps</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No personal records yet. Start logging workouts to set your PRs!</p>
+        <a href="{{ url_for('workout') }}" class="btn btn-primary">Start Workout</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
