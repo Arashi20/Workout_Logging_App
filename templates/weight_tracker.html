@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Weight Tracker - Workout Logger{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="weight-tracker-container">
+    <h1>Weight Tracker</h1>
+
+    <div class="add-weight-card">
+        <h2>Log Weight</h2>
+        <form method="POST" action="{{ url_for('add_weight_log') }}" class="weight-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" name="weight" step="0.1" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="body_fat_percentage">Body Fat %</label>
+                    <input type="number" id="body_fat_percentage" name="body_fat_percentage" step="0.1" min="0" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="visceral_fat">Visceral Fat</label>
+                    <input type="number" id="visceral_fat" name="visceral_fat" step="0.1" min="0">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Log Weight</button>
+        </form>
+    </div>
+
+    {% if weight_logs %}
+    <div class="chart-container">
+        <h2>Progress Chart</h2>
+        <canvas id="weightChart"></canvas>
+    </div>
+
+    <div class="weight-logs">
+        <h2>Recent Logs</h2>
+        <div class="logs-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Weight</th>
+                        <th>Body Fat %</th>
+                        <th>Visceral Fat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in weight_logs %}
+                    <tr>
+                        <td>{{ log.logged_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ log.weight }} kg</td>
+                        <td>{{ log.body_fat_percentage if log.body_fat_percentage else '-' }}</td>
+                        <td>{{ log.visceral_fat if log.visceral_fat else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No weight logs yet. Start tracking your weight above!</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if weight_logs %}
+<script>
+    fetch('{{ url_for("weight_tracker_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [
+                        {
+                            label: 'Weight (kg)',
+                            data: data.weights,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Body Fat %',
+                            data: data.body_fat,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        });
+</script>
+{% endif %}
+{% endblock %}

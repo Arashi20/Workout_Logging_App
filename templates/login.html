@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <h1>🏋️ Workout Logger</h1>
+        <p class="subtitle">Log in to track your fitness journey</p>
+        
+        <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full">Login</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

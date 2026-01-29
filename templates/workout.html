@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Workout - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="workout-container">
+    <h1>Workout Session</h1>
+
+    {% if not active_session %}
+    <div class="session-card">
+        <p>No active workout session</p>
+        <form method="POST" action="{{ url_for('start_workout') }}">
+            <button type="submit" class="btn btn-primary btn-large">Start Workout</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="session-info">
+        <p><strong>Session Started:</strong> {{ active_session.start_time.strftime('%H:%M') }}</p>
+        <p><strong>Duration:</strong> <span id="duration">0</span> minutes</p>
+    </div>
+
+    <div class="add-set-card">
+        <h2>Add Set</h2>
+        <form method="POST" action="{{ url_for('add_set') }}" class="workout-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="exercise_name">Exercise</label>
+                    <input type="text" id="exercise_name" name="exercise_name" list="exercises" minlength="2" required>
+                    <datalist id="exercises">
+                        {% for exercise in exercises %}
+                        <option value="{{ exercise.name }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="set_type">Type</label>
+                    <select id="set_type" name="set_type">
+                        <option value="working">Working</option>
+                        <option value="warmup">Warmup</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" name="weight" step="0.5" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="reps">Reps</label>
+                    <input type="number" id="reps" name="reps" min="1" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Set</button>
+        </form>
+    </div>
+
+    {% if workout_logs %}
+    <div class="workout-logs">
+        <h2>Today's Workout</h2>
+        <div class="logs-list">
+            {% set current_exercise = '' %}
+            {% for log in workout_logs %}
+                {% if log.exercise.name != current_exercise %}
+                    {% set current_exercise = log.exercise.name %}
+                    <h3 class="exercise-name">{{ log.exercise.name }}</h3>
+                {% endif %}
+                <div class="log-item {% if log.set_type == 'warmup' %}warmup{% endif %}">
+                    <span class="set-info">Set {{ log.set_number }}</span>
+                    <span class="set-details">
+                        {% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps
+                    </span>
+                    <span class="set-type">{{ log.set_type }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('finish_workout') }}" class="finish-form">
+        <button type="submit" class="btn btn-success btn-large">Finish Workout</button>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+    {% if active_session %}
+    const startTime = new Date('{{ active_session.start_time.isoformat() }}');
+    
+    function updateDuration() {
+        const now = new Date();
+        const diff = Math.floor((now - startTime) / 1000 / 60);
+        document.getElementById('duration').textContent = diff;
+    }
+    
+    updateDuration();
+    setInterval(updateDuration, 60000);
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="landing-container">
+    <div class="welcome-section">
+        <h1>Welcome back, {{ current_user.username }}! 💪</h1>
+        <p class="tagline">Track your workouts, monitor progress, and achieve your goals</p>
+    </div>
+
+    <div class="card-grid">
+        <a href="{{ url_for('workout') }}" class="feature-card card-workout">
+            <div class="card-icon">🏋️</div>
+            <h2>Workout Logging</h2>
+            <p>Track your exercises, sets, and reps in real-time</p>
+        </a>
+
+        <a href="{{ url_for('prs') }}" class="feature-card card-prs">
+            <div class="card-icon">🏆</div>
+            <h2>Personal Records</h2>
+            <p>View all your PRs and celebrate achievements</p>
+        </a>
+
+        <a href="{{ url_for('programs') }}" class="feature-card card-programs">
+            <div class="card-icon">📋</div>
+            <h2>Workout Programs</h2>
+            <p>Create and manage your training programs</p>
+        </a>
+
+        <a href="{{ url_for('weight_tracker') }}" class="feature-card card-weight">
+            <div class="card-icon">⚖️</div>
+            <h2>Weight Tracker</h2>
+            <p>Monitor body weight and composition over time</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
