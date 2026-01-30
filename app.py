@@ -383,18 +383,22 @@ def delete_exercise(exercise_id):
         flash('Exercise not found', 'error')
         return redirect(url_for('exercises'))
     
-    # Check if exercise is used in any workout logs or PRs across all users
-    from models import WorkoutLog
-    has_workout_logs = WorkoutLog.query.filter_by(exercise_id=exercise.id).first() is not None
-    has_prs = PersonalRecord.query.filter_by(exercise_id=exercise.id).first() is not None
+    try:
+        # Delete associated PRs for all users
+        PersonalRecord.query.filter_by(exercise_id=exercise.id).delete()
+        
+        # Delete associated workout logs for all users
+        WorkoutLog.query.filter_by(exercise_id=exercise.id).delete()
+        
+        # Now delete the exercise
+        db.session.delete(exercise)
+        db.session.commit()
+        flash('Exercise deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error deleting exercise {exercise_id}: {str(e)}')
+        flash('Error deleting exercise', 'error')
     
-    if has_workout_logs or has_prs:
-        flash('Cannot delete exercise that has workout logs or PRs associated with it', 'error')
-        return redirect(url_for('exercises'))
-    
-    db.session.delete(exercise)
-    db.session.commit()
-    flash('Exercise deleted successfully!', 'success')
     return redirect(url_for('exercises'))
 
 @app.cli.command()
