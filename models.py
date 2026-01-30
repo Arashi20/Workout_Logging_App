@@ -20,6 +20,8 @@ class Exercise(db.Model):
     __tablename__ = 'exercises'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    exercise_type = db.Column(db.String(50))  # e.g., 'Strength', 'Cardio', 'Flexibility'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     workout_logs = db.relationship('WorkoutLog', backref='exercise', lazy=True)

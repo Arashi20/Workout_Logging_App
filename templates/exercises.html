@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Exercise List - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="exercises-container">
+    <h1>Exercise Library</h1>
+
+    <div class="add-exercise-card">
+        <h2>Add New Exercise</h2>
+        <form method="POST" action="{{ url_for('add_exercise') }}" class="exercise-form">
+            <div class="form-group">
+                <label for="name">Exercise Name</label>
+                <input type="text" id="name" name="name" minlength="2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="exercise_type">Exercise Type</label>
+                <select id="exercise_type" name="exercise_type">
+                    <option value="">Select Type</option>
+                    <option value="Strength">Strength</option>
+                    <option value="Cardio">Cardio</option>
+                    <option value="Flexibility">Flexibility</option>
+                    <option value="Compound">Compound</option>
+                    <option value="Isolation">Isolation</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3" placeholder="Optional: Add notes about form, muscles worked, etc."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Exercise</button>
+        </form>
+    </div>
+
+    {% if exercises %}
+    <div class="exercises-list">
+        <h2>All Exercises ({{ exercises|length }})</h2>
+        <div class="exercises-grid">
+            {% for exercise in exercises %}
+            <div class="exercise-card">
+                <div class="exercise-header">
+                    <h3>{{ exercise.name }}</h3>
+                    {% if exercise.exercise_type %}
+                    <span class="exercise-type">{{ exercise.exercise_type }}</span>
+                    {% endif %}
+                </div>
+                {% if exercise.description %}
+                <p class="exercise-description">{{ exercise.description }}</p>
+                {% endif %}
+                <div class="exercise-footer">
+                    <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
+                    <form method="POST" action="{{ url_for('delete_exercise', exercise_id=exercise.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Delete this exercise? (Only possible if no workout logs or PRs exist)')">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No exercises yet. Add your first exercise above!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
