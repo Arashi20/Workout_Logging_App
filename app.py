@@ -359,8 +359,8 @@ def add_exercise():
     
     exercise = Exercise(
         name=name,
-        description=description if description else None,
-        exercise_type=exercise_type if exercise_type else None
+        description=description or None,
+        exercise_type=exercise_type or None
     )
     db.session.add(exercise)
     db.session.commit()
@@ -376,8 +376,12 @@ def delete_exercise(exercise_id):
         flash('Exercise not found', 'error')
         return redirect(url_for('exercises'))
     
-    # Check if exercise is used in any workout logs or PRs
-    if exercise.workout_logs or exercise.prs:
+    # Check if exercise is used in any workout logs or PRs across all users
+    from models import WorkoutLog
+    has_workout_logs = WorkoutLog.query.filter_by(exercise_id=exercise.id).first() is not None
+    has_prs = PersonalRecord.query.filter_by(exercise_id=exercise.id).first() is not None
+    
+    if has_workout_logs or has_prs:
         flash('Cannot delete exercise that has workout logs or PRs associated with it', 'error')
         return redirect(url_for('exercises'))
     

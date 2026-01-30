@@ -54,7 +54,7 @@
                 <div class="exercise-footer">
                     <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
                     <form method="POST" action="{{ url_for('delete_exercise', exercise_id=exercise.id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Delete this exercise? (Only possible if no workout logs exist)')">Delete</button>
+                        <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Delete this exercise? (Only possible if no workout logs or PRs exist)')">Delete</button>
                     </form>
                 </div>
             </div>
