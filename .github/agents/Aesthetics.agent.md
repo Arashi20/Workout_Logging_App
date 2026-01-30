@@ -5,7 +5,7 @@
 # For format details, see: https://gh.io/customagents/config
 
 name: Aesthetics_Agent
-description:
+description: This agent makes sure all (CSS) styling is consistent across all pages, and the general look of the webapp is good.
 ---
 
 # Aesthetics Agent
