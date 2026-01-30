@@ -376,17 +376,21 @@ def delete_exercise(exercise_id):
         flash('Exercise not found', 'error')
         return redirect(url_for('exercises'))
     
-    # Delete associated PRs first
-    PersonalRecord.query.filter_by(exercise_id=exercise.id).delete()
+    try:
+        # Delete associated PRs first
+        PersonalRecord.query.filter_by(exercise_id=exercise.id).delete()
+        
+        # Delete associated workout logs
+        WorkoutLog.query.filter_by(exercise_id=exercise.id).delete()
+        
+        # Now delete the exercise
+        db.session.delete(exercise)
+        db.session.commit()
+        flash('Exercise deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting exercise', 'error')
     
-    # Delete associated workout logs
-    from models import WorkoutLog
-    WorkoutLog.query.filter_by(exercise_id=exercise.id).delete()
-    
-    # Now delete the exercise
-    db.session.delete(exercise)
-    db.session.commit()
-    flash('Exercise deleted successfully!', 'success')
     return redirect(url_for('exercises'))
 
 @app.cli.command()
