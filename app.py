@@ -109,6 +109,11 @@ def add_set():
     weight = request.form.get('weight')
     set_type = request.form.get('set_type', 'working')
     
+    # Validate set_type
+    if set_type not in ['working', 'warmup']:
+        flash('Invalid set type', 'error')
+        return redirect(url_for('workout'))
+    
     # Validate exercise_id
     if not exercise_id:
         flash('Please select an exercise', 'error')
