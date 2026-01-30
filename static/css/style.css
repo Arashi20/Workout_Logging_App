@@ -6,22 +6,23 @@
 }
 
 :root {
-    /* Gym-themed color palette - soft and clean */
-    --primary-color: #e74c3c;
-    --primary-dark: #c0392b;
-    --secondary-color: #3498db;
-    --success-color: #27ae60;
-    --warning-color: #f39c12;
-    --danger-color: #e74c3c;
+    /* Premium gym-themed color palette - sophisticated and modern */
+    --primary-color: #2c3e50;
+    --primary-dark: #1a252f;
+    --secondary-color: #546e7a;
+    --success-color: #4caf50;
+    --warning-color: #d4af37;
+    --danger-color: #c62828;
+    --accent-gold: #d4af37;
     
-    --bg-color: #f8f9fa;
+    --bg-color: #eceff1;
     --card-bg: #ffffff;
-    --text-primary: #2c3e50;
-    --text-secondary: #7f8c8d;
-    --border-color: #e1e8ed;
+    --text-primary: #1a1a1a;
+    --text-secondary: #546e7a;
+    --border-color: #cfd8dc;
     
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
     
     --border-radius: 12px;
     --spacing: 1rem;
@@ -289,7 +290,7 @@ body {
 }
 
 .card-workout:hover { border-color: var(--primary-color); }
-.card-prs:hover { border-color: var(--warning-color); }
+.card-prs:hover { border-color: var(--accent-gold); }
 .card-programs:hover { border-color: var(--secondary-color); }
 .card-weight:hover { border-color: var(--success-color); }
 
@@ -407,7 +408,7 @@ body {
     padding: 1.5rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    border-left: 4px solid var(--warning-color);
+    border-left: 4px solid var(--accent-gold);
 }
 
 .pr-header {
