@@ -330,6 +330,62 @@ def weight_tracker_data():
     
     return jsonify(data)
 
+@app.route('/exercises')
+@login_required
+def exercises():
+    all_exercises = Exercise.query.order_by(Exercise.name).all()
+    return render_template('exercises.html', exercises=all_exercises)
+
+@app.route('/exercises/add', methods=['POST'])
+@login_required
+def add_exercise():
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    exercise_type = request.form.get('exercise_type', '').strip()
+    
+    # Validate exercise name
+    if not name or len(name) < 2:
+        flash('Exercise name must be at least 2 characters', 'error')
+        return redirect(url_for('exercises'))
+    
+    # Normalize name to title case
+    name = name.title()
+    
+    # Check if exercise already exists
+    existing_exercise = Exercise.query.filter_by(name=name).first()
+    if existing_exercise:
+        flash('Exercise already exists', 'error')
+        return redirect(url_for('exercises'))
+    
+    exercise = Exercise(
+        name=name,
+        description=description if description else None,
+        exercise_type=exercise_type if exercise_type else None
+    )
+    db.session.add(exercise)
+    db.session.commit()
+    
+    flash('Exercise added successfully!', 'success')
+    return redirect(url_for('exercises'))
+
+@app.route('/exercises/delete/<int:exercise_id>', methods=['POST'])
+@login_required
+def delete_exercise(exercise_id):
+    exercise = Exercise.query.get(exercise_id)
+    if not exercise:
+        flash('Exercise not found', 'error')
+        return redirect(url_for('exercises'))
+    
+    # Check if exercise is used in any workout logs or PRs
+    if exercise.workout_logs or exercise.prs:
+        flash('Cannot delete exercise that has workout logs or PRs associated with it', 'error')
+        return redirect(url_for('exercises'))
+    
+    db.session.delete(exercise)
+    db.session.commit()
+    flash('Exercise deleted successfully!', 'success')
+    return redirect(url_for('exercises'))
+
 @app.cli.command()
 def init_db():
     """Initialize the database."""

@@ -494,6 +494,71 @@ body {
     color: var(--text-secondary);
 }
 
+/* Exercises Page */
+.add-exercise-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.exercises-list {
+    margin-top: 2rem;
+}
+
+.exercises-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.exercise-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--success-color);
+}
+
+.exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.exercise-type {
+    background-color: var(--success-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.exercise-description {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.exercise-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.exercise-date {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.card-exercises:hover { 
+    border-color: var(--success-color); 
+}
+
 /* Weight Tracker */
 .add-weight-card {
     background-color: var(--card-bg);
@@ -596,13 +661,29 @@ tr:hover {
         grid-template-columns: 1fr;
     }
 
+    .exercises-grid {
+        grid-template-columns: 1fr;
+    }
+
     .program-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
 
+    .exercise-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
     .program-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .exercise-footer {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
