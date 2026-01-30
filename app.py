@@ -104,14 +104,26 @@ def add_set():
         flash('Please start a workout session first', 'error')
         return redirect(url_for('workout'))
     
-    exercise_name = request.form.get('exercise_name', '').strip()
+    exercise_id = request.form.get('exercise_id')
     reps = request.form.get('reps')
     weight = request.form.get('weight')
     set_type = request.form.get('set_type', 'working')
     
-    # Validate input
-    if not exercise_name or len(exercise_name) < 2:
-        flash('Exercise name must be at least 2 characters', 'error')
+    # Validate exercise_id
+    if not exercise_id:
+        flash('Please select an exercise', 'error')
+        return redirect(url_for('workout'))
+    
+    try:
+        exercise_id_int = int(exercise_id)
+    except (ValueError, TypeError):
+        flash('Invalid exercise selection', 'error')
+        return redirect(url_for('workout'))
+    
+    # Get exercise
+    exercise = Exercise.query.get(exercise_id_int)
+    if not exercise:
+        flash('Exercise not found', 'error')
         return redirect(url_for('workout'))
     
     try:
@@ -133,16 +145,6 @@ def add_set():
         except (ValueError, TypeError):
             flash('Invalid weight value', 'error')
             return redirect(url_for('workout'))
-    
-    # Normalize exercise name to title case
-    exercise_name = exercise_name.title()
-    
-    # Get or create exercise
-    exercise = Exercise.query.filter_by(name=exercise_name).first()
-    if not exercise:
-        exercise = Exercise(name=exercise_name)
-        db.session.add(exercise)
-        db.session.commit()
     
     # Get the current set number for this exercise in this session
     last_set = WorkoutLog.query.filter_by(
