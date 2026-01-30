@@ -377,10 +377,10 @@ def delete_exercise(exercise_id):
         return redirect(url_for('exercises'))
     
     try:
-        # Delete associated PRs first
+        # Delete associated PRs for all users
         PersonalRecord.query.filter_by(exercise_id=exercise.id).delete()
         
-        # Delete associated workout logs
+        # Delete associated workout logs for all users
         WorkoutLog.query.filter_by(exercise_id=exercise.id).delete()
         
         # Now delete the exercise
@@ -389,6 +389,7 @@ def delete_exercise(exercise_id):
         flash('Exercise deleted successfully!', 'success')
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f'Error deleting exercise {exercise_id}: {str(e)}')
         flash('Error deleting exercise', 'error')
     
     return redirect(url_for('exercises'))
