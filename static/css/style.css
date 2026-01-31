@@ -803,6 +803,15 @@ tr:hover {
         font-size: 1.75rem;
     }
 
+    /* Center page titles on mobile screens (except landing page which is already centered) */
+    .container > h1:first-child,
+    .workout-container > h1:first-child,
+    .prs-container > h1:first-child,
+    .weight-tracker-container > h1:first-child,
+    .exercises-container > h1:first-child {
+        text-align: center;
+    }
+
     .card-grid {
         grid-template-columns: 1fr;
     }
