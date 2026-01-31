@@ -442,8 +442,16 @@ body {
     background-color: var(--secondary-color);
 }
 
-.finish-form {
-    text-align: center;
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.finish-form, .cancel-form {
+    margin: 0;
 }
 
 /* PRs Page */
