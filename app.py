@@ -292,6 +292,7 @@ def add_weight_log():
     weight = request.form.get('weight')
     body_fat = request.form.get('body_fat_percentage')
     visceral_fat = request.form.get('visceral_fat')
+    notes = request.form.get('notes', '').strip()
     
     # Validate weight
     try:
@@ -331,7 +332,8 @@ def add_weight_log():
         user_id=current_user.id,
         weight=weight_float,
         body_fat_percentage=body_fat_float,
-        visceral_fat=visceral_fat_float
+        visceral_fat=visceral_fat_float,
+        notes=notes if notes else None
     )
     db.session.add(weight_log)
     db.session.commit()
@@ -427,7 +429,6 @@ def export_workout_logs():
         WorkoutSession.id.label('session_id'),
         WorkoutSession.start_time.label('session_date'),
         WorkoutSession.duration_minutes,
-        WorkoutSession.notes.label('session_notes'),
         Exercise.name.label('exercise_name'),
         WorkoutLog.set_number,
         WorkoutLog.reps,
@@ -450,7 +451,7 @@ def export_workout_logs():
     # Write header
     writer.writerow([
         'session_id', 'session_date', 'session_duration_minutes', 
-        'exercise_name', 'set_number', 'reps', 'weight', 'set_type', 'session_notes'
+        'exercise_name', 'set_number', 'reps', 'weight', 'set_type'
     ])
     
     # Write data rows
@@ -463,8 +464,7 @@ def export_workout_logs():
             log.set_number,
             log.reps,
             log.weight if log.weight else '',
-            log.set_type,
-            log.session_notes if log.session_notes else ''
+            log.set_type
         ])
     
     # Prepare response
@@ -488,7 +488,7 @@ def export_weight_logs():
     writer = csv.writer(si)
     
     # Write header
-    writer.writerow(['log_date', 'weight', 'body_fat_percentage', 'visceral_fat'])
+    writer.writerow(['log_date', 'weight', 'body_fat_percentage', 'visceral_fat', 'notes'])
     
     # Write data rows
     for log in weight_logs:
@@ -496,7 +496,8 @@ def export_weight_logs():
             log.logged_at.strftime('%Y-%m-%d %H:%M:%S'),
             log.weight,
             log.body_fat_percentage if log.body_fat_percentage else '',
-            log.visceral_fat if log.visceral_fat else ''
+            log.visceral_fat if log.visceral_fat else '',
+            log.notes if log.notes else ''
         ])
     
     # Prepare response
