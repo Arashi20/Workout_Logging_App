@@ -88,7 +88,7 @@
 
 <script>
     {% if active_session %}
-    const startTime = new Date('{{ active_session.start_time.isoformat() }}');
+    const startTime = new Date('{{ active_session.start_time.isoformat() }}Z');
     
     function updateDuration() {
         const now = new Date();
