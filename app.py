@@ -208,7 +208,7 @@ def cancel_workout():
     if active_session:
         db.session.delete(active_session)
         db.session.commit()
-        flash('Workout cancelled', 'info')
+        flash('Workout cancelled successfully. All logged exercises have been removed.', 'info')
     
     return redirect(url_for('workout'))
 
