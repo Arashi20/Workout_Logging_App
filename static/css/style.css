@@ -663,6 +663,14 @@ th, td {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Notes column styling for word wrapping */
+td.notes-cell {
+    max-width: 250px;
+    word-break: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
 th {
     background-color: var(--bg-color);
     font-weight: 600;
