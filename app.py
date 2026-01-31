@@ -197,6 +197,21 @@ def finish_workout():
     
     return redirect(url_for('workout'))
 
+@app.route('/workout/cancel', methods=['POST'])
+@login_required
+def cancel_workout():
+    active_session = WorkoutSession.query.filter_by(
+        user_id=current_user.id,
+        end_time=None
+    ).first()
+    
+    if active_session:
+        db.session.delete(active_session)
+        db.session.commit()
+        flash('Workout cancelled', 'info')
+    
+    return redirect(url_for('workout'))
+
 def update_pr(user_id, exercise_id, weight, reps):
     """Update personal record if the new weight is higher"""
     pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
