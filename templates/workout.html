@@ -84,7 +84,7 @@
         <form method="POST" action="{{ url_for('finish_workout') }}" class="finish-form">
             <button type="submit" class="btn btn-success btn-large">Finish Workout</button>
         </form>
-        <form method="POST" action="{{ url_for('cancel_workout') }}" class="cancel-form" onsubmit="return confirm('Are you sure you want to cancel this workout? All logged sets will be lost.');">
+        <form method="POST" action="{{ url_for('cancel_workout') }}" class="cancel-form" id="cancel-form">
             <button type="submit" class="btn btn-danger btn-large">Cancel Workout</button>
         </form>
     </div>
@@ -103,6 +103,13 @@
     
     updateDuration();
     setInterval(updateDuration, 60000);
+    
+    // Confirmation dialog for cancelling workout
+    document.getElementById('cancel-form').addEventListener('submit', function(e) {
+        if (!confirm('Are you sure you want to cancel this workout? All logged sets will be lost.')) {
+            e.preventDefault();
+        }
+    });
     {% endif %}
 </script>
 {% endblock %}
