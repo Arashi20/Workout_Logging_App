@@ -65,7 +65,7 @@
                         <td>{{ log.weight }} kg</td>
                         <td>{{ log.body_fat_percentage if log.body_fat_percentage else '-' }}</td>
                         <td>{{ log.visceral_fat if log.visceral_fat else '-' }}</td>
-                        <td>{{ log.notes if log.notes else '-' }}</td>
+                        <td class="notes-cell">{{ log.notes if log.notes else '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
