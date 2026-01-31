@@ -13,7 +13,6 @@ class User(UserMixin, db.Model):
     
     workout_sessions = db.relationship('WorkoutSession', backref='user', lazy=True, cascade='all, delete-orphan')
     prs = db.relationship('PersonalRecord', backref='user', lazy=True, cascade='all, delete-orphan')
-    workout_programs = db.relationship('WorkoutProgram', backref='user', lazy=True, cascade='all, delete-orphan')
     weight_logs = db.relationship('WeightLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Exercise(db.Model):
@@ -59,15 +58,6 @@ class PersonalRecord(db.Model):
     achieved_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     __table_args__ = (db.UniqueConstraint('user_id', 'exercise_id', name='unique_user_exercise_pr'),)
-
-class WorkoutProgram(db.Model):
-    __tablename__ = 'workout_programs'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    program_type = db.Column(db.String(50))  # e.g., 'Upper/Lower', 'PPL', 'Full Body'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class WeightLog(db.Model):
     __tablename__ = 'weight_logs'

@@ -6,7 +6,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WorkoutProgram, WeightLog
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog
 
 load_dotenv()
 
@@ -236,49 +236,6 @@ def update_pr(user_id, exercise_id, weight, reps):
 def prs():
     personal_records = PersonalRecord.query.filter_by(user_id=current_user.id).order_by(PersonalRecord.achieved_at.desc()).all()
     return render_template('prs.html', prs=personal_records)
-
-@app.route('/programs')
-@login_required
-def programs():
-    workout_programs = WorkoutProgram.query.filter_by(user_id=current_user.id).order_by(WorkoutProgram.created_at.desc()).all()
-    return render_template('programs.html', programs=workout_programs)
-
-@app.route('/programs/add', methods=['POST'])
-@login_required
-def add_program():
-    name = request.form.get('name', '').strip()
-    description = request.form.get('description', '').strip()
-    program_type = request.form.get('program_type')
-    
-    # Validate program name
-    if not name or len(name) < 2:
-        flash('Program name must be at least 2 characters', 'error')
-        return redirect(url_for('programs'))
-    
-    program = WorkoutProgram(
-        user_id=current_user.id,
-        name=name,
-        description=description if description else None,
-        program_type=program_type
-    )
-    db.session.add(program)
-    db.session.commit()
-    
-    flash('Program added successfully!', 'success')
-    return redirect(url_for('programs'))
-
-@app.route('/programs/delete/<int:program_id>', methods=['POST'])
-@login_required
-def delete_program(program_id):
-    program = WorkoutProgram.query.filter_by(id=program_id, user_id=current_user.id).first()
-    if not program:
-        flash('Program not found or access denied', 'error')
-        return redirect(url_for('programs'))
-    
-    db.session.delete(program)
-    db.session.commit()
-    flash('Program deleted successfully!', 'success')
-    return redirect(url_for('programs'))
 
 @app.route('/weight-tracker')
 @login_required
