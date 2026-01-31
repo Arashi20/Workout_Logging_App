@@ -40,5 +40,21 @@
             <p>Monitor body weight and composition over time</p>
         </a>
     </div>
+
+    <div class="export-section">
+        <h2>📊 Export Data for Analysis</h2>
+        <p>Download your workout data as CSV files for data science and analysis</p>
+        <div class="export-buttons">
+            <a href="{{ url_for('export_workout_logs') }}" class="btn btn-export">
+                <span>📥</span> Export Workout Logs
+            </a>
+            <a href="{{ url_for('export_weight_logs') }}" class="btn btn-export">
+                <span>📥</span> Export Weight Logs
+            </a>
+            <a href="{{ url_for('export_personal_records') }}" class="btn btn-export">
+                <span>📥</span> Export Personal Records
+            </a>
+        </div>
+    </div>
 </div>
 {% endblock %}

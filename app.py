@@ -1,5 +1,7 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+import csv
+from io import StringIO
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -400,6 +402,140 @@ def delete_exercise(exercise_id):
         flash('Error deleting exercise', 'error')
     
     return redirect(url_for('exercises'))
+
+@app.route('/export/workout-logs')
+@login_required
+def export_workout_logs():
+    """Export comprehensive workout log as CSV (denormalized - one row per set)"""
+    # Query all workout logs for current user with related data
+    logs = db.session.query(
+        WorkoutSession.id.label('session_id'),
+        WorkoutSession.start_time.label('session_date'),
+        WorkoutSession.duration_minutes,
+        WorkoutSession.notes.label('session_notes'),
+        Exercise.name.label('exercise_name'),
+        WorkoutLog.set_number,
+        WorkoutLog.reps,
+        WorkoutLog.weight,
+        WorkoutLog.set_type
+    ).join(
+        WorkoutLog, WorkoutSession.id == WorkoutLog.session_id
+    ).join(
+        Exercise, WorkoutLog.exercise_id == Exercise.id
+    ).filter(
+        WorkoutSession.user_id == current_user.id
+    ).order_by(
+        WorkoutSession.start_time.desc(), WorkoutLog.id
+    ).all()
+    
+    # Create CSV in memory
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Write header
+    writer.writerow([
+        'session_id', 'session_date', 'session_duration_minutes', 
+        'exercise_name', 'set_number', 'reps', 'weight', 'set_type', 'session_notes'
+    ])
+    
+    # Write data rows
+    for log in logs:
+        writer.writerow([
+            log.session_id,
+            log.session_date.strftime('%Y-%m-%d %H:%M:%S') if log.session_date else '',
+            log.duration_minutes if log.duration_minutes else '',
+            log.exercise_name,
+            log.set_number,
+            log.reps,
+            log.weight if log.weight else '',
+            log.set_type,
+            log.session_notes if log.session_notes else ''
+        ])
+    
+    # Prepare response
+    output = si.getvalue()
+    si.close()
+    
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=workout_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+    )
+
+@app.route('/export/weight-logs')
+@login_required
+def export_weight_logs():
+    """Export weight tracker data as CSV"""
+    weight_logs = WeightLog.query.filter_by(user_id=current_user.id).order_by(WeightLog.logged_at).all()
+    
+    # Create CSV in memory
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Write header
+    writer.writerow(['log_date', 'weight', 'body_fat_percentage', 'visceral_fat'])
+    
+    # Write data rows
+    for log in weight_logs:
+        writer.writerow([
+            log.logged_at.strftime('%Y-%m-%d %H:%M:%S'),
+            log.weight,
+            log.body_fat_percentage if log.body_fat_percentage else '',
+            log.visceral_fat if log.visceral_fat else ''
+        ])
+    
+    # Prepare response
+    output = si.getvalue()
+    si.close()
+    
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=weight_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+    )
+
+@app.route('/export/personal-records')
+@login_required
+def export_personal_records():
+    """Export personal records as CSV"""
+    prs = db.session.query(
+        Exercise.name.label('exercise_name'),
+        PersonalRecord.weight,
+        PersonalRecord.reps,
+        PersonalRecord.achieved_at
+    ).join(
+        Exercise, PersonalRecord.exercise_id == Exercise.id
+    ).filter(
+        PersonalRecord.user_id == current_user.id
+    ).order_by(
+        PersonalRecord.achieved_at.desc()
+    ).all()
+    
+    # Create CSV in memory
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Write header
+    writer.writerow(['exercise_name', 'weight', 'reps', 'achieved_date'])
+    
+    # Write data rows
+    for pr in prs:
+        writer.writerow([
+            pr.exercise_name,
+            pr.weight,
+            pr.reps,
+            pr.achieved_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    # Prepare response
+    output = si.getvalue()
+    si.close()
+    
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=personal_records_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+    )
 
 @app.cli.command()
 def init_db():
