@@ -84,9 +84,25 @@
         <form method="POST" action="{{ url_for('finish_workout') }}" class="finish-form">
             <button type="submit" class="btn btn-success btn-large">Finish Workout</button>
         </form>
-        <form method="POST" action="{{ url_for('cancel_workout') }}" class="cancel-form" id="cancel-form">
-            <button type="submit" class="btn btn-danger btn-large">Cancel Workout</button>
-        </form>
+        <button type="button" class="btn btn-danger btn-large" id="cancel-button">Cancel Workout</button>
+    </div>
+    
+    <!-- Cancel Workout Modal -->
+    <div class="modal-overlay" id="cancel-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancel Workout?</h2>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this workout? All logged sets will be lost.</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="modal-cancel">No, Keep Workout</button>
+                <form method="POST" action="{{ url_for('cancel_workout') }}" id="cancel-form" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Yes, Cancel Workout</button>
+                </form>
+            </div>
+        </div>
     </div>
     {% endif %}
 </div>
@@ -104,12 +120,24 @@
     updateDuration();
     setInterval(updateDuration, 60000);
     
-    // Confirmation dialog for cancelling workout
-    const cancelForm = document.getElementById('cancel-form');
-    if (cancelForm) {
-        cancelForm.addEventListener('submit', function(e) {
-            if (!confirm('Are you sure you want to cancel this workout? All logged sets will be lost.')) {
-                e.preventDefault();
+    // Custom modal for cancelling workout
+    const cancelButton = document.getElementById('cancel-button');
+    const cancelModal = document.getElementById('cancel-modal');
+    const modalCancel = document.getElementById('modal-cancel');
+    
+    if (cancelButton && cancelModal) {
+        cancelButton.addEventListener('click', function() {
+            cancelModal.classList.add('active');
+        });
+        
+        modalCancel.addEventListener('click', function() {
+            cancelModal.classList.remove('active');
+        });
+        
+        // Close modal when clicking outside
+        cancelModal.addEventListener('click', function(e) {
+            if (e.target === cancelModal) {
+                cancelModal.classList.remove('active');
             }
         });
     }
