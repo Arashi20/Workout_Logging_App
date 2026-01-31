@@ -553,6 +553,12 @@ def export_personal_records():
         headers={'Content-Disposition': f'attachment; filename=personal_records_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
     )
 
+
+#When running the app in development mode run the following commands 
+#In your terminal:
+# flask init-db
+# flask create-admin
+
 @app.cli.command()
 def init_db():
     """Initialize the database."""
