@@ -34,7 +34,6 @@ class WorkoutSession(db.Model):
     start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     end_time = db.Column(db.DateTime)
     duration_minutes = db.Column(db.Integer)
-    notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True, cascade='all, delete-orphan')
@@ -77,4 +76,5 @@ class WeightLog(db.Model):
     weight = db.Column(db.Float, nullable=False)
     body_fat_percentage = db.Column(db.Float)
     visceral_fat = db.Column(db.Float)
+    notes = db.Column(db.Text)
     logged_at = db.Column(db.DateTime, default=datetime.utcnow)
