@@ -125,7 +125,7 @@
     const cancelModal = document.getElementById('cancel-modal');
     const modalCancel = document.getElementById('modal-cancel');
     
-    if (cancelButton && cancelModal) {
+    if (cancelButton && cancelModal && modalCancel) {
         cancelButton.addEventListener('click', function() {
             cancelModal.classList.add('active');
         });

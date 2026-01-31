@@ -150,7 +150,7 @@ body {
     max-width: 500px;
     width: 90%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    animation: slideUp 0.3s ease;
+    animation: slideInUp 0.3s ease;
 }
 
 .modal-header {
@@ -188,7 +188,7 @@ body {
     }
 }
 
-@keyframes slideUp {
+@keyframes slideInUp {
     from {
         opacity: 0;
         transform: translateY(20px);
