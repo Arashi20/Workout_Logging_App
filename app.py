@@ -1,7 +1,7 @@
 import os
 import csv
 from io import StringIO
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -46,7 +46,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password, password):
-            login_user(user, remember=True)
+            login_user(user)
+            session.permanent = True
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'error')
