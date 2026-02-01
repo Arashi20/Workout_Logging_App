@@ -763,6 +763,26 @@ td.notes-cell {
     overflow-wrap: break-word;
 }
 
+/* On small devices, limit notes height to prevent vertical expansion */
+@media (max-width: 768px) {
+    td.notes-cell {
+        max-width: 150px;
+        max-height: 60px;
+        overflow: hidden;
+        position: relative;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        cursor: pointer;
+    }
+    
+    td.notes-cell.expanded {
+        max-height: none;
+        -webkit-line-clamp: unset;
+    }
+}
+
 th {
     background-color: var(--bg-color);
     font-weight: 600;
