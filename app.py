@@ -16,6 +16,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///wor
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Session timeout: 20 minutes of inactivity
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
 
 db.init_app(app)
 login_manager = LoginManager()
@@ -44,7 +46,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password, password):
-            login_user(user)
+            login_user(user, remember=True)
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'error')
