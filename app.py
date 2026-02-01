@@ -241,7 +241,7 @@ def prs():
 @login_required
 def weight_tracker():
     weight_logs = WeightLog.query.filter_by(user_id=current_user.id).order_by(WeightLog.logged_at.desc()).all()
-    return render_template('weight_tracker.html', weight_logs=weight_logs)
+    return render_template('weight_tracker.html', weight_logs=weight_logs, now=datetime.utcnow())
 
 @app.route('/weight-tracker/add', methods=['POST'])
 @login_required
@@ -250,6 +250,18 @@ def add_weight_log():
     body_fat = request.form.get('body_fat_percentage')
     visceral_fat = request.form.get('visceral_fat')
     notes = request.form.get('notes', '').strip()
+    log_date = request.form.get('log_date')
+    
+    # Validate and parse date
+    logged_at = None
+    if log_date:
+        try:
+            logged_at = datetime.strptime(log_date, '%Y-%m-%d')
+        except ValueError:
+            flash('Invalid date format', 'error')
+            return redirect(url_for('weight_tracker'))
+    else:
+        logged_at = datetime.utcnow()
     
     # Validate weight
     try:
@@ -290,7 +302,8 @@ def add_weight_log():
         weight=weight_float,
         body_fat_percentage=body_fat_float,
         visceral_fat=visceral_fat_float,
-        notes=notes if notes else None
+        notes=notes if notes else None,
+        logged_at=logged_at
     )
     db.session.add(weight_log)
     db.session.commit()
