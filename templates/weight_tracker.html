@@ -86,53 +86,55 @@
 
 {% if weight_logs %}
 <script>
-    fetch('{{ url_for("weight_tracker_data") }}')
-        .then(response => response.json())
-        .then(data => {
-            const ctx = document.getElementById('weightChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.dates,
-                    datasets: [
-                        {
-                            label: 'Weight (kg)',
-                            data: data.weights,
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Body Fat %',
-                            data: data.body_fat,
-                            borderColor: '#3498db',
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('{{ url_for("weight_tracker_data") }}')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('weightChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [
+                            {
+                                label: 'Weight (kg)',
+                                data: data.weights,
+                                borderColor: '#e74c3c',
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Body Fat %',
+                                data: data.body_fat,
+                                borderColor: '#3498db',
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                                tension: 0.3
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
                         }
                     }
-                }
+                });
             });
-        });
-    
-    // Add click handlers for notes cells to expand on small screens
-    document.querySelectorAll('td.notes-cell').forEach(cell => {
-        cell.addEventListener('click', function() {
-            this.classList.toggle('expanded');
+        
+        // Add click handlers for notes cells to expand on small screens
+        document.querySelectorAll('td.notes-cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+            });
         });
     });
 </script>
