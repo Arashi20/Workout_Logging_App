@@ -253,14 +253,16 @@ def add_weight_log():
     log_date = request.form.get('log_date')
     
     # Validate and parse date
-    logged_at = None
+    # Note: All datetimes are stored as naive UTC datetimes for consistency
     if log_date:
         try:
+            # Parse the date and treat it as UTC midnight
             logged_at = datetime.strptime(log_date, '%Y-%m-%d')
         except ValueError:
             flash('Invalid date format', 'error')
             return redirect(url_for('weight_tracker'))
     else:
+        # Use current UTC time when no date is provided
         logged_at = datetime.utcnow()
     
     # Validate weight
