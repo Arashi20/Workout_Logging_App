@@ -85,7 +85,7 @@
                 <div class="stat-icon">⚡</div>
                 <div class="stat-content">
                     <h3>Last Workout Avg Weight</h3>
-                    {% if stats.avg_weight_last_workout > 0 %}
+                    {% if stats.avg_weight_last_workout and stats.avg_weight_last_workout > 0 %}
                     <p class="stat-value">{{ stats.avg_weight_last_workout }} kg</p>
                     <p class="stat-detail">per rep (working sets only)</p>
                     {% else %}
