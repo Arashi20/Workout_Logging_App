@@ -35,6 +35,68 @@
         </a>
     </div>
 
+    <!-- Fun Statistics Section -->
+    <div class="stats-section">
+        <h2>📊 Your Workout Stats</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🌟</div>
+                <div class="stat-content">
+                    <h3>Favorite Exercise (All Time)</h3>
+                    {% if stats.favorite_all_time %}
+                    <p class="stat-value">{{ stats.favorite_all_time }}</p>
+                    <p class="stat-detail">{{ stats.favorite_all_time_count }} sets logged</p>
+                    {% else %}
+                    <p class="stat-value">No data yet</p>
+                    <p class="stat-detail">Start logging workouts!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>Favorite Exercise (This Year)</h3>
+                    {% if stats.favorite_this_year %}
+                    <p class="stat-value">{{ stats.favorite_this_year }}</p>
+                    <p class="stat-detail">{{ stats.favorite_this_year_count }} sets logged</p>
+                    {% else %}
+                    <p class="stat-value">No data yet</p>
+                    <p class="stat-detail">Start logging workouts!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">💪</div>
+                <div class="stat-content">
+                    <h3>Highest Personal Record</h3>
+                    {% if stats.max_pr_exercise %}
+                    <p class="stat-value">{{ stats.max_pr_weight }} kg</p>
+                    <p class="stat-detail">{{ stats.max_pr_exercise }} - {{ stats.max_pr_reps }} reps</p>
+                    {% else %}
+                    <p class="stat-value">No PRs yet</p>
+                    <p class="stat-detail">Start lifting!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <h3>Last Workout Avg Weight</h3>
+                    {% if stats.avg_weight_last_workout and stats.avg_weight_last_workout > 0 %}
+                    <p class="stat-value">{{ stats.avg_weight_last_workout }} kg</p>
+                    <p class="stat-detail">per rep (working sets only)</p>
+                    {% else %}
+                    <p class="stat-value">No data</p>
+                    <p class="stat-detail">Complete a workout first!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="export-section">
         <h2>📊 Export Data for Analysis</h2>
         <p>Download your workout data as CSV files for data science and analysis</p>

@@ -31,7 +31,96 @@ def load_user(user_id):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        return render_template('landing.html')
+        # Calculate fun statistics for the landing page
+        stats = {}
+        
+        # 1. Most favorite workout of all time (exercise with most workout logs)
+        favorite_all_time = db.session.query(
+            Exercise.name,
+            db.func.count(WorkoutLog.id).label('count')
+        ).join(
+            WorkoutLog, Exercise.id == WorkoutLog.exercise_id
+        ).join(
+            WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+        ).filter(
+            WorkoutSession.user_id == current_user.id
+        ).group_by(
+            Exercise.id, Exercise.name
+        ).order_by(
+            db.func.count(WorkoutLog.id).desc()
+        ).first()
+        
+        stats['favorite_all_time'] = favorite_all_time.name if favorite_all_time else None
+        stats['favorite_all_time_count'] = favorite_all_time.count if favorite_all_time else 0
+        
+        # 2. Most favorite workout of this year
+        current_year = datetime.utcnow().year
+        year_start = datetime(current_year, 1, 1)
+        
+        favorite_this_year = db.session.query(
+            Exercise.name,
+            db.func.count(WorkoutLog.id).label('count')
+        ).join(
+            WorkoutLog, Exercise.id == WorkoutLog.exercise_id
+        ).join(
+            WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+        ).filter(
+            WorkoutSession.user_id == current_user.id,
+            WorkoutSession.start_time >= year_start
+        ).group_by(
+            Exercise.id, Exercise.name
+        ).order_by(
+            db.func.count(WorkoutLog.id).desc()
+        ).first()
+        
+        stats['favorite_this_year'] = favorite_this_year.name if favorite_this_year else None
+        stats['favorite_this_year_count'] = favorite_this_year.count if favorite_this_year else 0
+        
+        # 3. Highest weight lifted + corresponding exercise (max PR)
+        max_pr = db.session.query(
+            Exercise.name,
+            PersonalRecord.weight,
+            PersonalRecord.reps
+        ).join(
+            Exercise, PersonalRecord.exercise_id == Exercise.id
+        ).filter(
+            PersonalRecord.user_id == current_user.id
+        ).order_by(
+            PersonalRecord.weight.desc()
+        ).first()
+        
+        stats['max_pr_exercise'] = max_pr.name if max_pr else None
+        stats['max_pr_weight'] = max_pr.weight if max_pr else 0
+        stats['max_pr_reps'] = max_pr.reps if max_pr else 0
+        
+        # 4. Average weight lifted in last workout (excluding warmup sets)
+        last_session = WorkoutSession.query.filter_by(
+            user_id=current_user.id
+        ).filter(
+            WorkoutSession.end_time.isnot(None)
+        ).order_by(
+            WorkoutSession.end_time.desc()
+        ).first()
+        
+        if last_session:
+            # Calculate total weight and total reps from working sets only
+            last_workout_stats = db.session.query(
+                db.func.sum(WorkoutLog.weight * WorkoutLog.reps).label('total_weight'),
+                db.func.sum(WorkoutLog.reps).label('total_reps')
+            ).filter(
+                WorkoutLog.session_id == last_session.id,
+                WorkoutLog.set_type == 'working',
+                WorkoutLog.weight.isnot(None)
+            ).first()
+            
+            if last_workout_stats and last_workout_stats.total_reps and last_workout_stats.total_reps > 0:
+                stats['avg_weight_last_workout'] = round(last_workout_stats.total_weight / last_workout_stats.total_reps, 2)
+            else:
+                stats['avg_weight_last_workout'] = 0
+        else:
+            stats['avg_weight_last_workout'] = 0
+        
+        return render_template('landing.html', stats=stats)
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
