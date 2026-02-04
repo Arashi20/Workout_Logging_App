@@ -962,3 +962,62 @@ tr:hover {
         padding: 0.75rem 1.5rem;
     }
 }
+
+/* Searchable Exercise Dropdown */
+.exercise-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-hover);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    margin-top: 4px;
+}
+
+.exercise-dropdown.active {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid var(--bg-color);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-color);
+}
+
+.dropdown-item.selected {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.form-group {
+    position: relative;
+}
+
+#exercise_search {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+#exercise_search:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
