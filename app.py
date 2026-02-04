@@ -159,6 +159,8 @@ def workout():
     ).first()
     
     exercises = Exercise.query.order_by(Exercise.name).all()
+    # Convert Exercise objects to dictionaries for JSON serialization
+    exercises_list = [{'id': ex.id, 'name': ex.name} for ex in exercises]
     workout_logs = []
     
     if active_session:
@@ -166,7 +168,7 @@ def workout():
     
     return render_template('workout.html', 
                          active_session=active_session,
-                         exercises=exercises,
+                         exercises=exercises_list,
                          workout_logs=workout_logs)
 
 @app.route('/workout/start', methods=['POST'])
