@@ -1004,6 +1004,13 @@ tr:hover {
     color: white;
 }
 
+.dropdown-message {
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+}
+
 .form-group {
     position: relative;
 }

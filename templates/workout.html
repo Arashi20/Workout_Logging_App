@@ -140,11 +140,7 @@
     }
     
     // Searchable exercise dropdown
-    const exercises = [
-        {% for exercise in exercises %}
-        { id: {{ exercise.id }}, name: "{{ exercise.name }}" }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
+    const exercises = {{ exercises|tojson }};
     
     const exerciseSearch = document.getElementById('exercise_search');
     const exerciseId = document.getElementById('exercise_id');
@@ -163,7 +159,7 @@
         exerciseDropdown.innerHTML = '';
         
         if (filteredExercises.length === 0) {
-            exerciseDropdown.innerHTML = '<div class="dropdown-item">No exercises found</div>';
+            exerciseDropdown.innerHTML = '<div class="dropdown-message">No exercises found</div>';
             exerciseDropdown.classList.add('active');
             return;
         }
@@ -216,6 +212,8 @@
     
     exerciseSearch.addEventListener('keydown', function(e) {
         const items = exerciseDropdown.querySelectorAll('.dropdown-item');
+        
+        if (items.length === 0) return;
         
         if (e.key === 'ArrowDown') {
             e.preventDefault();
