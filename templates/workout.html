@@ -21,7 +21,7 @@
 
     <div class="add-set-card">
         <h2>Add Set</h2>
-        <form method="POST" action="{{ url_for('add_set') }}" class="workout-form">
+        <form method="POST" action="{{ url_for('add_set') }}" class="workout-form" id="add-set-form">
             <div class="form-row">
                 <div class="form-group">
                     <label for="exercise_search">Exercise</label>
@@ -149,10 +149,9 @@
     let selectedIndex = -1;
     
     function filterExercises(searchTerm) {
-        const filtered = exercises.filter(ex => 
+        return exercises.filter(ex => 
             ex.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        return filtered;
     }
     
     function renderDropdown(filteredExercises) {
@@ -254,6 +253,19 @@
             selectedIndex = -1;
         }
     });
+    
+    // Form validation to ensure an exercise is selected
+    const addSetForm = document.getElementById('add-set-form');
+    if (addSetForm) {
+        addSetForm.addEventListener('submit', function(e) {
+            if (!exerciseId.value) {
+                e.preventDefault();
+                alert('Please select an exercise from the dropdown');
+                exerciseSearch.focus();
+                return false;
+            }
+        });
+    }
     {% endif %}
 </script>
 {% endblock %}
