@@ -1,6 +1,8 @@
 import os
 import csv
+import json
 from io import StringIO
+from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -485,6 +487,24 @@ def delete_exercise(exercise_id):
         flash('Error deleting exercise', 'error')
     
     return redirect(url_for('exercises'))
+
+@app.route('/health')
+@login_required
+def health():
+    """Health dashboard with genomics data and bloodwork (future)"""
+    # Load genomics insights
+    insights_path = Path('public/insights.json')
+    genomics_data = None
+    
+    if insights_path.exists():
+        try:
+            with open(insights_path, 'r') as f:
+                genomics_data = json.load(f)
+        except Exception as e:
+            app.logger.error(f'Error loading genomics data: {str(e)}')
+            flash('Error loading genomics data', 'error')
+    
+    return render_template('health.html', genomics=genomics_data)
 
 @app.route('/export/workout-logs')
 @login_required

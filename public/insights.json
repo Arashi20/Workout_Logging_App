@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-09T11:24:29.230233+00:00",
+    "version": "1.0",
+    "source": "23andMe Raw Data",
+    "genome_build": "GRCh37/hg19"
+  },
+  "summary": {
+    "total_snps": 643161,
+    "chromosomes": 26,
+    "traits_analyzed": 28,
+    "coverage": {
+      "autosomes": 95124,
+      "sex_chromosomes": 19604,
+      "mitochondrial": 4145
+    }
+  },
+  "traits": {
+    "fitness": {
+      "muscle_type": {
+        "value": "Endurance",
+        "detail": "XX - Better endurance capacity"
+      },
+      "aerobic_response": {
+        "value": "Standard",
+        "detail": "Normal aerobic training response"
+      },
+      "ace_type": {
+        "value": "Balanced",
+        "detail": "ID-like - Mixed endurance/power"
+      },
+      "endurance_capacity": {
+        "value": "Good",
+        "detail": "Above average endurance"
+      },
+      "muscle_growth": {
+        "value": "Enhanced potential",
+        "detail": "May build muscle more easily"
+      }
+    },
+    "metabolism": {
+      "caffeine": {
+        "value": "Intermediate",
+        "detail": "Moderate caffeine metabolism"
+      },
+      "weight_tendency": {
+        "value": "Standard",
+        "detail": "Normal weight regulation"
+      },
+      "fat_burning": {
+        "value": "Good",
+        "detail": "Above average fat burning"
+      }
+    },
+    "nutrition": {
+      "lactose": {
+        "value": "Intolerant",
+        "detail": "May have difficulty digesting dairy"
+      }
+    },
+    "recovery": {
+      "injury_risk": {
+        "value": "Elevated",
+        "detail": "Higher risk of soft tissue injuries"
+      },
+      "inflammation": {
+        "value": "Higher response",
+        "detail": "May need more recovery time"
+      },
+      "oxidative_stress": {
+        "value": "Enhanced protection",
+        "detail": "Good oxidative stress management"
+      },
+      "altitude_adaptation": {
+        "value": "Standard",
+        "detail": "Normal altitude response"
+      },
+      "training_response": {
+        "value": "Enhanced",
+        "detail": "Stronger muscle growth response to training"
+      },
+      "vascular_growth": {
+        "value": "Standard",
+        "detail": "Normal vascular adaptation"
+      }
+    },
+    "lifestyle": {
+      "chronotype": {
+        "value": "Morning person",
+        "detail": "Early bird - better morning performance"
+      },
+      "sleep_duration": {
+        "value": "Standard sleep needs",
+        "detail": "Normal sleep duration requirements"
+      },
+      "caffeine_sleep_impact": {
+        "value": "Low sensitivity",
+        "detail": "Caffeine has less impact on sleep"
+      },
+      "dht_conversion": {
+        "value": "Higher activity",
+        "detail": "More conversion to DHT (hair loss risk, but muscle gains)"
+      },
+      "pain_tolerance": {
+        "value": "Lower tolerance",
+        "detail": "Warrior gene - lower pain threshold, handles acute stress better"
+      },
+      "pain_sensitivity": {
+        "value": "Less sensitive",
+        "detail": "May have higher pain threshold"
+      },
+      "exercise_motivation": {
+        "value": "Higher natural drive",
+        "detail": "Naturally more motivated to exercise"
+      }
+    },
+    "ancestry": {
+      "neanderthal_hair": {
+        "value": "Neanderthal variant",
+        "detail": "Carries Neanderthal variant for straight hair"
+      },
+      "neanderthal_immune": {
+        "value": "Neanderthal variant",
+        "detail": "Carries Neanderthal immune system variant"
+      },
+      "skin_pigmentation": {
+        "value": "Mixed",
+        "detail": "Intermediate pigmentation allele"
+      },
+      "hair_thickness": {
+        "value": "Standard",
+        "detail": "Typical hair thickness"
+      },
+      "earwax_type": {
+        "value": "Dry earwax",
+        "detail": "Common in East Asian ancestry (also less body odor)"
+      },
+      "eye_color_factor": {
+        "value": "Darker eyes tendency",
+        "detail": "Associated with brown eyes"
+      }
+    }
+  },
+  "stats": {
+    "chromosomes": {
+      "1": 52273,
+      "2": 51855,
+      "6": 43940,
+      "3": 42977,
+      "4": 39419,
+      "5": 37052,
+      "7": 34302,
+      "10": 32145,
+      "11": 31693,
+      "8": 31602,
+      "12": 29356,
+      "9": 26435,
+      "13": 22003,
+      "14": 19844,
+      "17": 19494,
+      "15": 18997,
+      "18": 17706,
+      "X": 16279,
+      "19": 15322,
+      "20": 14804,
+      "16": 10007,
+      "22": 9192,
+      "21": 8599
+    }
+  }
+}

@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Health Dashboard - Workout Logger{% endblock %}
+
+{% block content %}
+<h1>Health Dashboard</h1>
+
+{% if genomics %}
+<!-- Genomics Section -->
+<section class="section">
+    <div class="section-header">
+        <h2>🧬 Genetic Insights</h2>
+        <p class="text-muted">Based on 23andMe raw data analysis</p>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(genomics.summary.total_snps) }}</div>
+            <div class="stat-label">SNPs Analyzed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ genomics.summary.traits_analyzed }}</div>
+            <div class="stat-label">Traits Identified</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ genomics.summary.chromosomes }}</div>
+            <div class="stat-label">Chromosomes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ genomics.metadata.genome_build }}</div>
+            <div class="stat-label">Genome Build</div>
+        </div>
+    </div>
+    
+    <!-- Fitness Traits -->
+    {% if genomics.traits.fitness %}
+    <div class="trait-category">
+        <h3 class="category-title">💪 Fitness & Performance</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.fitness.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Metabolism Traits -->
+    {% if genomics.traits.metabolism %}
+    <div class="trait-category">
+        <h3 class="category-title">🔥 Metabolism</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.metabolism.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Nutrition Traits -->
+    {% if genomics.traits.nutrition %}
+    <div class="trait-category">
+        <h3 class="category-title">🥗 Nutrition</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.nutrition.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recovery Traits -->
+    {% if genomics.traits.recovery %}
+    <div class="trait-category">
+        <h3 class="category-title">🛌 Recovery & Adaptation</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.recovery.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Lifestyle Traits -->
+    {% if genomics.traits.lifestyle %}
+    <div class="trait-category">
+        <h3 class="category-title">🌙 Lifestyle & Hormones</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.lifestyle.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ancestry Traits -->
+    {% if genomics.traits.ancestry %}
+    <div class="trait-category">
+        <h3 class="category-title">🌍 Ancestry & Fun Facts</h3>
+        <div class="trait-grid">
+            {% for key, trait in genomics.traits.ancestry.items() %}
+            <div class="trait-card">
+                <div class="trait-name">{{ key.replace('_', ' ').title() }}</div>
+                <div class="trait-value">{{ trait.value }}</div>
+                <div class="trait-detail">{{ trait.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Data Info -->
+    <div class="data-info">
+        <p><small>📅 Generated: {{ genomics.metadata.generated_at[:10] }}</small></p>
+        <p><small>⚠️ This data is for informational and educational purposes only. Not for medical use.</small></p>
+    </div>
+</section>
+
+{% else %}
+<!-- No Genomics Data -->
+<div class="empty-state">
+    <div class="empty-icon">🧬</div>
+    <h2>No Genomics Data Available</h2>
+    <p>Run the analysis script to generate your genetic insights:</p>
+    <code>python scripts/analyze_genomics_data.py</code>
+</div>
+{% endif %}
+
+<!-- Bloodwork Section Placeholder -->
+<section class="section">
+    <div class="section-header">
+        <h2>🩸 Bloodwork</h2>
+        <p class="text-muted">Coming soon</p>
+    </div>
+    <div class="empty-state">
+        <div class="empty-icon">🩺</div>
+        <h3>Bloodwork tracking coming soon</h3>
+        <p>This section will display your lab results and trends</p>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Health Page Specific Styles */
+.section {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.section-header {
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.section-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Trait Categories */
+.trait-category {
+    margin-bottom: 2.5rem;
+}
+
+.category-title {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-gold);
+}
+
+.trait-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.trait-card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.trait-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--accent-gold);
+}
+
+.trait-name {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.trait-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.trait-detail {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Data Info */
+.data-info {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.data-info p {
+    margin: 0.25rem 0;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h2,
+.empty-state h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state code {
+    background: var(--bg-color);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: 1rem;
+    font-family: 'Courier New', monospace;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .trait-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
