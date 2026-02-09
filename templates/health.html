@@ -14,7 +14,7 @@
     </div>
     
     <!-- Summary Stats -->
-    <div class="stats-grid">
+    <div class="stats-grid" id="genomics-stats-grid">
         <div class="stat-card">
             <div class="stat-value">{{ "{:,}".format(genomics.summary.total_snps) }}</div>
             <div class="stat-label">SNPs Analyzed</div>
@@ -196,23 +196,36 @@
     margin-bottom: 2rem;
 }
 
-.stat-card {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
+#genomics-stats-grid .stat-card {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     padding: 1.5rem;
     border-radius: var(--border-radius);
     text-align: center;
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
 }
 
-.stat-value {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+#genomics-stats-grid .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    border-color: var(--accent-gold);
 }
 
-.stat-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
+#genomics-stats-grid .stat-value {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+#genomics-stats-grid .stat-label {
+    font-size: 0.9rem !important;
+    color: var(--accent-gold) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
 }
 
 /* Trait Categories */
@@ -225,7 +238,8 @@
     font-size: 1.5rem;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--accent-gold);
+    border-bottom: 3px solid var(--accent-gold);
+    font-weight: 700;
 }
 
 .trait-grid {
