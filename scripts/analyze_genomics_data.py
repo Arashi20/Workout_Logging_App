@@ -140,6 +140,51 @@ def analyze_traits(df):
         else:
             traits['metabolism']['fat_burning'] = {'value': 'Good', 'detail': 'Above average fat burning'}
     
+    # LPL (rs328) - Fat storage patterns
+    lpl = df[df['rsid'] == 'rs328']
+    if not lpl.empty:
+        genotype = lpl.iloc[0]['genotype']
+        if 'G' in genotype:
+            traits['metabolism']['fat_storage'] = {'value': 'Efficient storage', 'detail': 'May store fat more readily'}
+        else:
+            traits['metabolism']['fat_storage'] = {'value': 'Standard storage', 'detail': 'Normal fat storage patterns'}
+    
+    # LYPLAL1 (rs2605100) - Waist-to-hip ratio / body shape
+    lyplal1 = df[df['rsid'] == 'rs2605100']
+    if not lyplal1.empty:
+        genotype = lyplal1.iloc[0]['genotype']  
+        if 'A' in genotype:
+            traits['metabolism']['body_shape'] = {'value': 'Lower body fat tendency', 'detail': 'Pear shape - fat stored in hips/thighs'}
+        else:
+            traits['metabolism']['body_shape'] = {'value': 'Upper body fat tendency', 'detail': 'Apple shape - fat stored in waist/belly'}
+    
+    # GRB14 (rs10195252) - Visceral fat tendency
+    grb14 = df[df['rsid'] == 'rs10195252']
+    if not grb14.empty:
+        genotype = grb14.iloc[0]['genotype']
+        if 'T' in genotype:
+            traits['metabolism']['visceral_fat_tendency'] = {'value': 'Higher risk', 'detail': 'May accumulate more visceral (organ) fat'}
+        else:
+            traits['metabolism']['visceral_fat_tendency'] = {'value': 'Lower risk', 'detail': 'Less tendency for visceral fat accumulation'}
+    
+    # VDR (rs2228570) - Bone mineral density
+    vdr_bone = df[df['rsid'] == 'rs2228570']
+    if not vdr_bone.empty:
+        genotype = vdr_bone.iloc[0]['genotype']
+        if 'T' in genotype:
+            traits['metabolism']['bone_density'] = {'value': 'Higher BMD tendency', 'detail': 'Better bone mineral density'}
+        else:
+            traits['metabolism']['bone_density'] = {'value': 'Standard BMD', 'detail': 'Normal bone density'}
+    
+    # COL1A1 (rs1800012) - Bone strength
+    col1a1 = df[df['rsid'] == 'rs1800012']
+    if not col1a1.empty:
+        genotype = col1a1.iloc[0]['genotype']
+        if 'T' in genotype:
+            traits['metabolism']['bone_strength'] = {'value': 'Lower bone strength', 'detail': 'May have reduced bone strength (osteoporosis risk)'}
+        else:
+            traits['metabolism']['bone_strength'] = {'value': 'Normal bone strength', 'detail': 'Standard bone structure'}
+    
     # === NUTRITION ===
     
     # Lactose tolerance (rs4988235 - LCT)

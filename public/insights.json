@@ -1,16 +1,16 @@
 {
   "metadata": {
-    "generated_at": "2026-02-09T11:24:29.230233+00:00",
+    "generated_at": "2026-02-09T18:24:18.427193+00:00",
     "version": "1.0",
     "source": "23andMe Raw Data",
     "genome_build": "GRCh37/hg19"
   },
   "summary": {
-    "total_snps": 643161,
-    "chromosomes": 26,
-    "traits_analyzed": 28,
+    "total_snps": 643162,
+    "chromosomes": 28,
+    "traits_analyzed": 32,
     "coverage": {
-      "autosomes": 95124,
+      "autosomes": 226196,
       "sex_chromosomes": 19604,
       "mitochondrial": 4145
     }
@@ -50,6 +50,22 @@
       "fat_burning": {
         "value": "Good",
         "detail": "Above average fat burning"
+      },
+      "fat_storage": {
+        "value": "Efficient storage",
+        "detail": "May store fat more readily"
+      },
+      "body_shape": {
+        "value": "Lower body fat tendency",
+        "detail": "Pear shape - fat stored in hips/thighs"
+      },
+      "visceral_fat_tendency": {
+        "value": "Higher risk",
+        "detail": "May accumulate more visceral (organ) fat"
+      },
+      "bone_strength": {
+        "value": "Normal bone strength",
+        "detail": "Standard bone structure"
       }
     },
     "nutrition": {
@@ -146,7 +162,6 @@
       "1": 52273,
       "2": 51855,
       "6": 43940,
-      "3": 42977,
       "4": 39419,
       "5": 37052,
       "7": 34302,
@@ -154,6 +169,7 @@
       "11": 31693,
       "8": 31602,
       "12": 29356,
+      "3": 16034,
       "9": 26435,
       "13": 22003,
       "14": 19844,
@@ -163,9 +179,8 @@
       "X": 16279,
       "19": 15322,
       "20": 14804,
-      "16": 10007,
-      "22": 9192,
-      "21": 8599
+      "16": 10008,
+      "22": 9192
     }
   }
 }
