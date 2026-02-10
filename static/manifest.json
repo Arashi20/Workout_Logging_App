@@ -2,7 +2,7 @@
   "name": "AMStrength Workout Logger",
   "short_name": "AMStrength",
   "description": "Track your workouts, PRs, exercises, and body metrics",
-  "start_url": "https://web-production-73e8c.up.railway.app/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#4a90e2",

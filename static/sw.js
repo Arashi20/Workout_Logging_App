@@ -17,14 +17,22 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - serve from cache, update cache with network response
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(event.request).then((response) => {
+        // Fetch from network and update cache
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          // Update cache with new response
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        });
+        
+        // Return cached version immediately, or wait for network
+        return response || fetchPromise;
+      });
+    })
   );
 });
 
