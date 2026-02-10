@@ -156,7 +156,6 @@
         <div class="stat-card {% if latest_bloodwork.get_status('testosterone_total') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('testosterone_total') == 'high' %}status-high{% else %}status-low{% endif %}">
             <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.testosterone_total) }}</div>
             <div class="stat-label">Testosterone Total</div>
-            <div class="stat-unit">nmol/l</div>
         </div>
         {% endif %}
         
@@ -164,7 +163,6 @@
         <div class="stat-card {% if latest_bloodwork.get_status('testosterone_free') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('testosterone_free') == 'high' %}status-high{% else %}status-low{% endif %}">
             <div class="stat-value">{{ "%.0f"|format(latest_bloodwork.testosterone_free) }}</div>
             <div class="stat-label">Free Testosterone</div>
-            <div class="stat-unit">pmol/l</div>
         </div>
         {% endif %}
         
@@ -172,7 +170,6 @@
         <div class="stat-card {% if latest_bloodwork.get_status('hba1c') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('hba1c') == 'high' %}status-high{% else %}status-low{% endif %}">
             <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.hba1c) }}</div>
             <div class="stat-label">HbA1c</div>
-            <div class="stat-unit">%</div>
         </div>
         {% endif %}
         
@@ -180,15 +177,8 @@
         <div class="stat-card {% if latest_bloodwork.get_status('glucose_fasting') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('glucose_fasting') == 'high' %}status-high{% else %}status-low{% endif %}">
             <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.glucose_fasting) }}</div>
             <div class="stat-label">Glucose (Fasting)</div>
-            <div class="stat-unit">mmol/l</div>
         </div>
         {% endif %}
-    </div>
-    
-    <!-- Normalized Chart -->
-    <div class="chart-container" style="margin: 2rem 0;">
-        <h3 class="category-title">📊 All Metrics (% of Reference Range)</h3>
-        <canvas id="bloodworkChart" style="max-height: 400px;"></canvas>
     </div>
     
     <!-- Full Metrics Table -->
