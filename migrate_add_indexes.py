@@ -122,6 +122,8 @@ def add_indexes():
                         print(f"⚠️  Table or column does not exist, skipping: {table_name}.{column_name}")
                     else:
                         print(f"✗ Error creating index {index_name}: {e}")
+                    # Note: PostgreSQL uses AUTOCOMMIT (no transaction to rollback)
+                    # SQLite needs explicit rollback on error
                     if not is_postgres:
                         connection.rollback()
             
@@ -169,6 +171,8 @@ def add_indexes():
                         print(f"⚠️  Table or column does not exist, skipping: {table_name}.({', '.join(column_names)})")
                     else:
                         print(f"✗ Error creating composite index {index_name}: {e}")
+                    # Note: PostgreSQL uses AUTOCOMMIT (no transaction to rollback)
+                    # SQLite needs explicit rollback on error
                     if not is_postgres:
                         connection.rollback()
         finally:
