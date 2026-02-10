@@ -37,6 +37,9 @@ class WorkoutSession(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True, cascade='all, delete-orphan')
+    
+    # Composite index for the common "active session" query (user_id + end_time=None)
+    __table_args__ = (db.Index('idx_user_active_session', 'user_id', 'end_time'),)
 
 class WorkoutLog(db.Model):
     __tablename__ = 'workout_logs'
@@ -48,6 +51,9 @@ class WorkoutLog(db.Model):
     weight = db.Column(db.Float)
     set_type = db.Column(db.String(20), default='working')  # 'warmup' or 'working'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Composite index for finding sets by session and exercise (used in add_set to get last set number)
+    __table_args__ = (db.Index('idx_session_exercise', 'session_id', 'exercise_id'),)
 
 class PersonalRecord(db.Model):
     __tablename__ = 'personal_records'

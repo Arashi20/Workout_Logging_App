@@ -50,7 +50,7 @@ def add_indexes():
     is_postgres = 'postgresql' in db_url
     metadata = MetaData()
     
-    # Define indexes to create: (table_name, column_name, index_name)
+    # Define single-column indexes to create: (table_name, column_name, index_name)
     indexes_to_create = [
         ('weight_logs', 'user_id', 'ix_weight_logs_user_id'),
         ('weight_logs', 'logged_at', 'ix_weight_logs_logged_at'),
@@ -62,6 +62,12 @@ def add_indexes():
         ('personal_records', 'exercise_id', 'ix_personal_records_exercise_id'),
         ('bloodwork_logs', 'user_id', 'ix_bloodwork_logs_user_id'),
         ('bloodwork_logs', 'test_date', 'ix_bloodwork_logs_test_date'),
+    ]
+    
+    # Define composite indexes to create: (table_name, [column_names], index_name)
+    composite_indexes_to_create = [
+        ('workout_sessions', ['user_id', 'end_time'], 'idx_user_active_session'),
+        ('workout_logs', ['session_id', 'exercise_id'], 'idx_session_exercise'),
     ]
     
     try:
@@ -88,8 +94,9 @@ def add_indexes():
                 
                 # Create the index using SQLAlchemy DDL constructs for safety
                 try:
-                    # Reflect the table from the database
-                    table = Table(table_name, metadata, autoload_with=engine)
+                    # Reflect the table from the database with fresh metadata
+                    table_metadata = MetaData()
+                    table = Table(table_name, table_metadata, autoload_with=engine)
                     
                     # Create index using SQLAlchemy's Index construct
                     index = Index(index_name, table.c[column_name])
@@ -111,10 +118,57 @@ def add_indexes():
                     error_msg = str(e).lower()
                     if 'already exists' in error_msg or 'duplicate' in error_msg:
                         print(f"✓ Index {index_name} already exists on {table_name}.{column_name}")
-                    elif 'no such table' in error_msg:
-                        print(f"⚠️  Table {table_name} does not exist, skipping index creation")
+                    elif 'no such table' in error_msg or 'no such column' in error_msg:
+                        print(f"⚠️  Table or column does not exist, skipping: {table_name}.{column_name}")
                     else:
                         print(f"✗ Error creating index {index_name}: {e}")
+                    if not is_postgres:
+                        connection.rollback()
+            
+            # Create composite indexes
+            for table_name, column_names, index_name in composite_indexes_to_create:
+                # Check if index already exists
+                try:
+                    if is_postgres:
+                        exists = index_exists_postgres(connection, table_name, index_name)
+                    else:
+                        exists = index_exists_sqlite(connection, metadata, table_name, index_name)
+                    
+                    if exists:
+                        print(f"✓ Composite index {index_name} already exists on {table_name}.({', '.join(column_names)})")
+                        continue
+                except Exception as e:
+                    print(f"⚠️  Could not check if composite index exists: {e}")
+                
+                # Create the composite index
+                try:
+                    # Reflect the table from the database with fresh metadata
+                    table_metadata = MetaData()
+                    table = Table(table_name, table_metadata, autoload_with=engine)
+                    
+                    # Create composite index using SQLAlchemy's Index construct
+                    columns = [table.c[col_name] for col_name in column_names]
+                    index = Index(index_name, *columns)
+                    
+                    if is_postgres:
+                        # For PostgreSQL, use CREATE INDEX CONCURRENTLY
+                        create_stmt = str(index.create(bind=engine).compile(engine))
+                        create_stmt = create_stmt.replace('CREATE INDEX', 'CREATE INDEX CONCURRENTLY', 1)
+                        connection.execute(text(create_stmt))
+                    else:
+                        # For SQLite, use standard CREATE INDEX IF NOT EXISTS
+                        index.create(bind=connection, checkfirst=True)
+                        connection.commit()
+                    
+                    print(f"✓ Created composite index {index_name} on {table_name}.({', '.join(column_names)})")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if 'already exists' in error_msg or 'duplicate' in error_msg:
+                        print(f"✓ Composite index {index_name} already exists on {table_name}.({', '.join(column_names)})")
+                    elif 'no such table' in error_msg or 'no such column' in error_msg:
+                        print(f"⚠️  Table or column does not exist, skipping: {table_name}.({', '.join(column_names)})")
+                    else:
+                        print(f"✗ Error creating composite index {index_name}: {e}")
                     if not is_postgres:
                         connection.rollback()
         finally:
