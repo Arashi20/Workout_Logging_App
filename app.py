@@ -30,6 +30,29 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Auto-initialize database and admin user on startup
+def init_app():
+    """Initialize database tables and create admin user if needed"""
+    with app.app_context():
+        # Create all tables if they don't exist
+        db.create_all()
+        
+        # Create admin user if it doesn't exist
+        username = os.getenv('ADMIN_USERNAME', 'admin')
+        password = os.getenv('ADMIN_PASSWORD', 'admin123')
+        
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User(username=username, password=generate_password_hash(password))
+            db.session.add(user)
+            db.session.commit()
+            app.logger.info(f'Admin user created: {username}')
+        else:
+            app.logger.info(f'Admin user already exists: {username}')
+
+# Run initialization
+init_app()
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
