@@ -8,7 +8,7 @@ Usage: python migrate_add_indexes.py
 import os
 import sys
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, Index, Table, MetaData, Column, Integer
 
 load_dotenv()
 
@@ -25,24 +25,30 @@ def get_database_url():
     return db_url
 
 def index_exists_postgres(connection, table_name, index_name):
-    """Check if an index exists in PostgreSQL"""
+    """Check if an index exists in PostgreSQL using parameterized query"""
     result = connection.execute(text("""
         SELECT 1 FROM pg_indexes 
         WHERE tablename = :table_name AND indexname = :index_name
     """), {"table_name": table_name, "index_name": index_name})
     return result.fetchone() is not None
 
-def index_exists_sqlite(connection, table_name, index_name):
-    """Check if an index exists in SQLite"""
-    result = connection.execute(text(f"PRAGMA index_list('{table_name}')"))
-    indexes = result.fetchall()
-    return any(idx[1] == index_name for idx in indexes)
+def index_exists_sqlite(connection, metadata, table_name, index_name):
+    """Check if an index exists in SQLite using SQLAlchemy inspector"""
+    try:
+        # Use SQLAlchemy's inspect to safely check for indexes
+        from sqlalchemy import inspect
+        inspector = inspect(connection)
+        indexes = inspector.get_indexes(table_name)
+        return any(idx['name'] == index_name for idx in indexes)
+    except Exception:
+        return False
 
 def add_indexes():
     """Add indexes to improve query performance"""
     db_url = get_database_url()
     engine = create_engine(db_url)
     is_postgres = 'postgresql' in db_url
+    metadata = MetaData()
     
     # Define indexes to create: (table_name, column_name, index_name)
     indexes_to_create = [
@@ -59,14 +65,20 @@ def add_indexes():
     ]
     
     try:
-        with engine.connect() as connection:
+        if is_postgres:
+            # For PostgreSQL, use AUTOCOMMIT for CONCURRENTLY option
+            connection = engine.connect().execution_options(isolation_level='AUTOCOMMIT')
+        else:
+            connection = engine.connect()
+        
+        try:
             for table_name, column_name, index_name in indexes_to_create:
                 # Check if index already exists
                 try:
                     if is_postgres:
                         exists = index_exists_postgres(connection, table_name, index_name)
                     else:
-                        exists = index_exists_sqlite(connection, table_name, index_name)
+                        exists = index_exists_sqlite(connection, metadata, table_name, index_name)
                     
                     if exists:
                         print(f"✓ Index {index_name} already exists on {table_name}.{column_name}")
@@ -74,23 +86,39 @@ def add_indexes():
                 except Exception as e:
                     print(f"⚠️  Could not check if index exists: {e}")
                 
-                # Create the index
+                # Create the index using SQLAlchemy DDL constructs for safety
                 try:
-                    if is_postgres:
-                        sql = text(f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {index_name} ON {table_name} ({column_name})")
-                    else:
-                        sql = text(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table_name} ({column_name})")
+                    # Reflect the table from the database
+                    table = Table(table_name, metadata, autoload_with=engine)
                     
-                    connection.execute(sql)
-                    connection.commit()
+                    # Create index using SQLAlchemy's Index construct
+                    index = Index(index_name, table.c[column_name])
+                    
+                    if is_postgres:
+                        # For PostgreSQL, use CREATE INDEX CONCURRENTLY
+                        # This requires raw SQL as SQLAlchemy doesn't support CONCURRENTLY directly
+                        create_stmt = str(index.create(bind=engine).compile(engine))
+                        # Replace CREATE INDEX with CREATE INDEX CONCURRENTLY
+                        create_stmt = create_stmt.replace('CREATE INDEX', 'CREATE INDEX CONCURRENTLY', 1)
+                        connection.execute(text(create_stmt))
+                    else:
+                        # For SQLite, use standard CREATE INDEX IF NOT EXISTS
+                        index.create(bind=connection, checkfirst=True)
+                        connection.commit()
+                    
                     print(f"✓ Created index {index_name} on {table_name}.{column_name}")
                 except Exception as e:
                     error_msg = str(e).lower()
                     if 'already exists' in error_msg or 'duplicate' in error_msg:
                         print(f"✓ Index {index_name} already exists on {table_name}.{column_name}")
+                    elif 'no such table' in error_msg:
+                        print(f"⚠️  Table {table_name} does not exist, skipping index creation")
                     else:
                         print(f"✗ Error creating index {index_name}: {e}")
-                    connection.rollback()
+                    if not is_postgres:
+                        connection.rollback()
+        finally:
+            connection.close()
         
         engine.dispose()
         print("\n✅ Migration completed!")

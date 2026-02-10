@@ -23,10 +23,10 @@ elif app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql://'):
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Database connection pool settings for better performance
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,          # Number of connections to keep in the pool
+    'pool_size': 10,          # Number of connections to maintain in the pool
     'pool_recycle': 3600,     # Recycle connections after 1 hour
     'pool_pre_ping': True,    # Verify connections before using them
-    'max_overflow': 20        # Allow up to 20 extra connections when pool is exhausted
+    'max_overflow': 20        # Maximum additional connections when pool_size is exceeded
 }
 # Session timeout: 20 minutes of inactivity
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
