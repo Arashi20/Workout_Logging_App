@@ -300,11 +300,13 @@ def add_set():
         set_type=set_type
     )
     db.session.add(workout_log)
-    db.session.commit()
     
-    # Update PR if applicable
+    # Update PR if applicable (without committing yet)
     if set_type == 'working' and weight_float:
         update_pr(current_user.id, exercise.id, weight_float, reps_int)
+    
+    # Commit both workout log and PR update in a single transaction
+    db.session.commit()
     
     flash('Set added successfully!', 'success')
     return redirect(url_for('workout'))
@@ -342,7 +344,11 @@ def cancel_workout():
     return redirect(url_for('workout'))
 
 def update_pr(user_id, exercise_id, weight, reps):
-    """Update personal record if the new weight is higher"""
+    """Update personal record if the new weight is higher.
+    
+    Note: This function does NOT commit. The caller is responsible for committing
+    to allow batching multiple operations in a single transaction.
+    """
     pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
     
     if not pr or weight > pr.weight:
@@ -358,7 +364,6 @@ def update_pr(user_id, exercise_id, weight, reps):
                 reps=reps
             )
             db.session.add(pr)
-        db.session.commit()
 
 @app.route('/prs')
 @login_required
