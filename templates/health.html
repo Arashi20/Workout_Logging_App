@@ -142,17 +142,304 @@
 </div>
 {% endif %}
 
-<!-- Bloodwork Section Placeholder -->
+<!-- Bloodwork Section -->
 <section class="section">
     <div class="section-header">
         <h2>🩸 Bloodwork</h2>
-        <p class="text-muted">Coming soon</p>
+        <p class="text-muted">Track your health metrics and hormonal profile</p>
     </div>
+    
+    {% if latest_bloodwork %}
+    <!-- Latest Results Cards -->
+    <div class="stats-grid" id="bloodwork-stats-grid">
+        {% if latest_bloodwork.testosterone_total %}
+        <div class="stat-card {% if latest_bloodwork.get_status('testosterone_total') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('testosterone_total') == 'high' %}status-high{% else %}status-low{% endif %}">
+            <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.testosterone_total) }}</div>
+            <div class="stat-label">Testosterone Total</div>
+            <div class="stat-unit">nmol/l</div>
+        </div>
+        {% endif %}
+        
+        {% if latest_bloodwork.testosterone_free %}
+        <div class="stat-card {% if latest_bloodwork.get_status('testosterone_free') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('testosterone_free') == 'high' %}status-high{% else %}status-low{% endif %}">
+            <div class="stat-value">{{ "%.0f"|format(latest_bloodwork.testosterone_free) }}</div>
+            <div class="stat-label">Free Testosterone</div>
+            <div class="stat-unit">pmol/l</div>
+        </div>
+        {% endif %}
+        
+        {% if latest_bloodwork.hba1c %}
+        <div class="stat-card {% if latest_bloodwork.get_status('hba1c') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('hba1c') == 'high' %}status-high{% else %}status-low{% endif %}">
+            <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.hba1c) }}</div>
+            <div class="stat-label">HbA1c</div>
+            <div class="stat-unit">%</div>
+        </div>
+        {% endif %}
+        
+        {% if latest_bloodwork.glucose_fasting %}
+        <div class="stat-card {% if latest_bloodwork.get_status('glucose_fasting') == 'normal' %}status-normal{% elif latest_bloodwork.get_status('glucose_fasting') == 'high' %}status-high{% else %}status-low{% endif %}">
+            <div class="stat-value">{{ "%.1f"|format(latest_bloodwork.glucose_fasting) }}</div>
+            <div class="stat-label">Glucose (Fasting)</div>
+            <div class="stat-unit">mmol/l</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Normalized Chart -->
+    <div class="chart-container" style="margin: 2rem 0;">
+        <h3 class="category-title">📊 All Metrics (% of Reference Range)</h3>
+        <canvas id="bloodworkChart" style="max-height: 400px;"></canvas>
+    </div>
+    
+    <!-- Full Metrics Table -->
+    <div class="metrics-table-container">
+        <h3 class="category-title">📋 Complete Blood Panel</h3>
+        <div class="table-responsive">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Unit</th>
+                        <th>Reference Range</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Priority 1: Gym Bro Essentials -->
+                    <tr class="category-row">
+                        <td colspan="5"><strong>💪 Gym Bro Essentials</strong></td>
+                    </tr>
+                    {% for field in ['testosterone_total', 'testosterone_free', 'shbg', 'oestradiol', 'prolactin'] %}
+                    {% set value = latest_bloodwork[field] %}
+                    {% if value %}
+                    {% set ref = latest_bloodwork.REFERENCE_RANGES[field] %}
+                    {% set status = latest_bloodwork.get_status(field) %}
+                    <tr>
+                        <td>{{ ref.name }}</td>
+                        <td class="value-cell">{{ "%.1f"|format(value) }}</td>
+                        <td>{{ ref.unit }}</td>
+                        <td>{{ "%.1f"|format(ref.min) }} - {{ "%.1f"|format(ref.max) }}</td>
+                        <td>
+                            <span class="status-badge status-{{ status }}">
+                                {% if status == 'normal' %}✓ Normal
+                                {% elif status == 'high' %}↑ High
+                                {% else %}↓ Low
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Priority 2: Metabolic Health -->
+                    <tr class="category-row">
+                        <td colspan="5"><strong>🔥 Metabolic Health</strong></td>
+                    </tr>
+                    {% for field in ['hba1c', 'glucose_fasting', 'insulin_fasting', 'homa_index'] %}
+                    {% set value = latest_bloodwork[field] %}
+                    {% if value %}
+                    {% set ref = latest_bloodwork.REFERENCE_RANGES[field] %}
+                    {% set status = latest_bloodwork.get_status(field) %}
+                    <tr>
+                        <td>{{ ref.name }}</td>
+                        <td class="value-cell">{{ "%.2f"|format(value) }}</td>
+                        <td>{{ ref.unit }}</td>
+                        <td>{{ "%.1f"|format(ref.min) }} - {{ "%.1f"|format(ref.max) }}</td>
+                        <td>
+                            <span class="status-badge status-{{ status }}">
+                                {% if status == 'normal' %}✓ Normal
+                                {% elif status == 'high' %}↑ High
+                                {% else %}↓ Low
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="data-info">
+            <p><small>📅 Test Date: {{ latest_bloodwork.test_date.strftime('%B %d, %Y') }}</small></p>
+            {% if latest_bloodwork.notes %}
+            <p><small>📝 Notes: {{ latest_bloodwork.notes }}</small></p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Add New Results Button -->
+    <div style="margin-top: 2rem; text-align: center;">
+        <button onclick="toggleBloodworkForm()" class="btn btn-primary">+ Add New Bloodwork Results</button>
+    </div>
+    
+    <!-- Add Bloodwork Form (Hidden by default) -->
+    <div id="bloodworkForm" style="display: none; margin-top: 2rem;">
+        <h3 class="category-title">Add New Bloodwork Results</h3>
+        <form method="POST" action="{{ url_for('add_bloodwork') }}" class="bloodwork-form">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="test_date">Test Date</label>
+                    <input type="date" id="test_date" name="test_date" class="form-control" required>
+                </div>
+                
+                <!-- Priority 1: Gym Bro Essentials -->
+                <div class="form-section full-width">
+                    <h4>💪 Gym Bro Essentials</h4>
+                </div>
+                
+                <div class="form-group">
+                    <label for="testosterone_total">Testosterone Total (nmol/l)</label>
+                    <input type="number" step="0.1" id="testosterone_total" name="testosterone_total" class="form-control" placeholder="e.g., 36.7">
+                </div>
+                
+                <div class="form-group">
+                    <label for="testosterone_free">Testosterone Free (pmol/l)</label>
+                    <input type="number" step="1" id="testosterone_free" name="testosterone_free" class="form-control" placeholder="e.g., 582">
+                </div>
+                
+                <div class="form-group">
+                    <label for="shbg">SHBG (nmol/l)</label>
+                    <input type="number" step="0.1" id="shbg" name="shbg" class="form-control" placeholder="e.g., 35.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="oestradiol">Oestradiol (pmol/l)</label>
+                    <input type="number" step="1" id="oestradiol" name="oestradiol" class="form-control" placeholder="e.g., 100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="prolactin">Prolactin (mIU/l)</label>
+                    <input type="number" step="1" id="prolactin" name="prolactin" class="form-control" placeholder="e.g., 200">
+                </div>
+                
+                <!-- Priority 2: Metabolic Health -->
+                <div class="form-section full-width">
+                    <h4>🔥 Metabolic Health</h4>
+                </div>
+                
+                <div class="form-group">
+                    <label for="hba1c">HbA1c (%)</label>
+                    <input type="number" step="0.1" id="hba1c" name="hba1c" class="form-control" placeholder="e.g., 5.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="glucose_fasting">Glucose - Fasting (mmol/l)</label>
+                    <input type="number" step="0.1" id="glucose_fasting" name="glucose_fasting" class="form-control" placeholder="e.g., 4.8">
+                </div>
+                
+                <div class="form-group">
+                    <label for="insulin_fasting">Insulin - Fasting (mIU/l)</label>
+                    <input type="number" step="0.1" id="insulin_fasting" name="insulin_fasting" class="form-control" placeholder="e.g., 10.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="homa_index">HOMA-Index</label>
+                    <input type="number" step="0.1" id="homa_index" name="homa_index" class="form-control" placeholder="e.g., 1.5">
+                </div>
+                
+                <!-- Notes -->
+                <div class="form-group full-width">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Any additional notes about this test..."></textarea>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+                <button type="submit" class="btn btn-primary">Save Results</button>
+                <button type="button" onclick="toggleBloodworkForm()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+    
+    {% else %}
+    <!-- No Bloodwork Data -->
     <div class="empty-state">
         <div class="empty-icon">🩺</div>
-        <h3>Bloodwork tracking coming soon</h3>
-        <p>This section will display your lab results and trends</p>
+        <h3>No bloodwork data yet</h3>
+        <p>Add your first bloodwork results to start tracking your health metrics</p>
+        <button onclick="toggleBloodworkForm()" class="btn btn-primary" style="margin-top: 1rem;">+ Add Bloodwork Results</button>
     </div>
+    
+    <!-- Add Bloodwork Form -->
+    <div id="bloodworkForm" style="display: none; margin-top: 2rem;">
+        <h3 class="category-title">Add New Bloodwork Results</h3>
+        <form method="POST" action="{{ url_for('add_bloodwork') }}" class="bloodwork-form">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="test_date">Test Date</label>
+                    <input type="date" id="test_date" name="test_date" class="form-control" required>
+                </div>
+                
+                <!-- Priority 1: Gym Bro Essentials -->
+                <div class="form-section full-width">
+                    <h4>💪 Gym Bro Essentials</h4>
+                </div>
+                
+                <div class="form-group">
+                    <label for="testosterone_total">Testosterone Total (nmol/l)</label>
+                    <input type="number" step="0.1" id="testosterone_total" name="testosterone_total" class="form-control" placeholder="e.g., 36.7">
+                </div>
+                
+                <div class="form-group">
+                    <label for="testosterone_free">Testosterone Free (pmol/l)</label>
+                    <input type="number" step="1" id="testosterone_free" name="testosterone_free" class="form-control" placeholder="e.g., 582">
+                </div>
+                
+                <div class="form-group">
+                    <label for="shbg">SHBG (nmol/l)</label>
+                    <input type="number" step="0.1" id="shbg" name="shbg" class="form-control" placeholder="e.g., 35.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="oestradiol">Oestradiol (pmol/l)</label>
+                    <input type="number" step="1" id="oestradiol" name="oestradiol" class="form-control" placeholder="e.g., 100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="prolactin">Prolactin (mIU/l)</label>
+                    <input type="number" step="1" id="prolactin" name="prolactin" class="form-control" placeholder="e.g., 200">
+                </div>
+                
+                <!-- Priority 2: Metabolic Health -->
+                <div class="form-section full-width">
+                    <h4>🔥 Metabolic Health</h4>
+                </div>
+                
+                <div class="form-group">
+                    <label for="hba1c">HbA1c (%)</label>
+                    <input type="number" step="0.1" id="hba1c" name="hba1c" class="form-control" placeholder="e.g., 5.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="glucose_fasting">Glucose - Fasting (mmol/l)</label>
+                    <input type="number" step="0.1" id="glucose_fasting" name="glucose_fasting" class="form-control" placeholder="e.g., 4.8">
+                </div>
+                
+                <div class="form-group">
+                    <label for="insulin_fasting">Insulin - Fasting (mIU/l)</label>
+                    <input type="number" step="0.1" id="insulin_fasting" name="insulin_fasting" class="form-control" placeholder="e.g., 10.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="homa_index">HOMA-Index</label>
+                    <input type="number" step="0.1" id="homa_index" name="homa_index" class="form-control" placeholder="e.g., 1.5">
+                </div>
+                
+                <!-- Notes -->
+                <div class="form-group full-width">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Any additional notes about this test..."></textarea>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+                <button type="submit" class="btn btn-primary">Save Results</button>
+                <button type="button" onclick="toggleBloodworkForm()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 </section>
 
 {% endblock %}
@@ -379,5 +666,358 @@
         padding: 1rem;
     }
 }
+
+/* Bloodwork Specific Styles */
+#bloodwork-stats-grid .stat-card {
+    background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    border: 2px solid rgba(220, 20, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+#bloodwork-stats-grid .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+#bloodwork-stats-grid .stat-card.status-normal {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #1e7e34 0%, #28a745 100%);
+}
+
+#bloodwork-stats-grid .stat-card.status-high {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, #e0a800 0%, #ffc107 100%);
+}
+
+#bloodwork-stats-grid .stat-card.status-low {
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #bd2130 0%, #dc3545 100%);
+}
+
+#bloodwork-stats-grid .stat-value {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+#bloodwork-stats-grid .stat-label {
+    font-size: 0.9rem !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+#bloodwork-stats-grid .stat-unit {
+    font-size: 0.75rem !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    margin-top: 0.25rem !important;
+}
+
+/* Metrics Table */
+.metrics-table-container {
+    margin-top: 2rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.metrics-table thead {
+    background: var(--primary-color);
+    color: white;
+}
+
+.metrics-table th,
+.metrics-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metrics-table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.metrics-table tbody tr:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.metrics-table .category-row {
+    background: var(--card-bg);
+}
+
+.metrics-table .category-row td {
+    padding: 0.75rem 1rem;
+    color: var(--accent-gold);
+    font-size: 0.9rem;
+}
+
+.value-cell {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.status-normal {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.status-high {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.status-low {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Bloodwork Form */
+.bloodwork-form {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-section {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-gold);
+}
+
+.form-section h4 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--accent-gold);
+    color: var(--bg-color);
+}
+
+.btn-primary:hover {
+    background: #c9a237;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.btn-secondary {
+    background: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background: var(--text-secondary);
+    transform: translateY(-2px);
+}
+
+/* Chart Container */
+.chart-container {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-table th,
+    .metrics-table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// Toggle bloodwork form visibility
+function toggleBloodworkForm() {
+    const form = document.getElementById('bloodworkForm');
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// Initialize bloodwork chart if data exists
+{% if latest_bloodwork %}
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{{ url_for("bloodwork_chart_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('bloodworkChart').getContext('2d');
+            
+            // Color code based on percentage
+            const backgroundColors = data.data.map(value => {
+                if (value < 0 || value > 100) return 'rgba(220, 53, 69, 0.6)'; // Red for out of range
+                if (value >= 40 && value <= 60) return 'rgba(40, 167, 69, 0.6)'; // Green for optimal
+                if (value >= 25 && value <= 75) return 'rgba(255, 193, 7, 0.6)'; // Yellow for acceptable
+                return 'rgba(220, 53, 69, 0.6)'; // Red for suboptimal
+            });
+            
+            const borderColors = backgroundColors.map(color => color.replace('0.6', '1'));
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '% of Reference Range',
+                        data: data.data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Test Date: ' + data.test_date,
+                            color: '#d4af37',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(1) + '%';
+                                },
+                                afterLabel: function(context) {
+                                    const value = context.parsed.y;
+                                    if (value < 0) return '(Below minimum)';
+                                    if (value > 100) return '(Above maximum)';
+                                    if (value >= 40 && value <= 60) return '(Optimal range)';
+                                    if (value >= 25 && value <= 75) return '(Acceptable range)';
+                                    return '(Suboptimal)';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 120,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                },
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#9ca3af',
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading bloodwork chart:', error);
+        });
+});
+{% endif %}
+</script>
 {% endblock %}

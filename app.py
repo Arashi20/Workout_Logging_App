@@ -8,7 +8,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
 
 load_dotenv()
 
@@ -491,7 +491,7 @@ def delete_exercise(exercise_id):
 @app.route('/health')
 @login_required
 def health():
-    """Health dashboard with genomics data and bloodwork (future)"""
+    """Health dashboard with genomics data and bloodwork"""
     # Load genomics insights
     insights_path = Path('public/insights.json')
     genomics_data = None
@@ -504,7 +504,91 @@ def health():
             app.logger.error(f'Error loading genomics data: {str(e)}')
             flash('Error loading genomics data', 'error')
     
-    return render_template('health.html', genomics=genomics_data)
+    # Fetch latest bloodwork results
+    latest_bloodwork = BloodworkLog.query.filter_by(user_id=current_user.id).order_by(BloodworkLog.test_date.desc()).first()
+    
+    # Fetch all bloodwork results for history
+    all_bloodwork = BloodworkLog.query.filter_by(user_id=current_user.id).order_by(BloodworkLog.test_date.desc()).all()
+    
+    return render_template('health.html', genomics=genomics_data, latest_bloodwork=latest_bloodwork, all_bloodwork=all_bloodwork)
+
+@app.route('/health/bloodwork/add', methods=['POST'])
+@login_required
+def add_bloodwork():
+    """Add new bloodwork results"""
+    try:
+        # Get form data
+        test_date_str = request.form.get('test_date')
+        test_date = datetime.strptime(test_date_str, '%Y-%m-%d') if test_date_str else datetime.utcnow()
+        
+        # Create new bloodwork log
+        bloodwork = BloodworkLog(
+            user_id=current_user.id,
+            test_date=test_date,
+            notes=request.form.get('notes', '')
+        )
+        
+        # Priority 1: Gym Bro Essentials
+        if request.form.get('testosterone_total'):
+            bloodwork.testosterone_total = float(request.form.get('testosterone_total'))
+        if request.form.get('testosterone_free'):
+            bloodwork.testosterone_free = float(request.form.get('testosterone_free'))
+        if request.form.get('shbg'):
+            bloodwork.shbg = float(request.form.get('shbg'))
+        if request.form.get('oestradiol'):
+            bloodwork.oestradiol = float(request.form.get('oestradiol'))
+        if request.form.get('prolactin'):
+            bloodwork.prolactin = float(request.form.get('prolactin'))
+        
+        # Priority 2: Metabolic Health
+        if request.form.get('hba1c'):
+            bloodwork.hba1c = float(request.form.get('hba1c'))
+        if request.form.get('glucose_fasting'):
+            bloodwork.glucose_fasting = float(request.form.get('glucose_fasting'))
+        if request.form.get('insulin_fasting'):
+            bloodwork.insulin_fasting = float(request.form.get('insulin_fasting'))
+        if request.form.get('homa_index'):
+            bloodwork.homa_index = float(request.form.get('homa_index'))
+        
+        db.session.add(bloodwork)
+        db.session.commit()
+        flash('Bloodwork results added successfully!', 'success')
+    except ValueError as e:
+        db.session.rollback()
+        flash('Invalid input. Please enter valid numbers.', 'error')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error adding bloodwork: {str(e)}')
+        flash('Error adding bloodwork results', 'error')
+    
+    return redirect(url_for('health'))
+
+@app.route('/health/bloodwork/data')
+@login_required
+def bloodwork_chart_data():
+    """Get bloodwork data formatted for chart (normalized percentages)"""
+    latest = BloodworkLog.query.filter_by(user_id=current_user.id).order_by(BloodworkLog.test_date.desc()).first()
+    
+    if not latest:
+        return jsonify({'labels': [], 'data': []})
+    
+    # Get all metrics with values
+    labels = []
+    data = []
+    
+    for field_name, ref_info in BloodworkLog.REFERENCE_RANGES.items():
+        value = getattr(latest, field_name, None)
+        if value is not None:
+            percentage = latest.get_percentage_of_range(field_name)
+            if percentage is not None:
+                labels.append(ref_info['name'])
+                data.append(percentage)
+    
+    return jsonify({
+        'labels': labels,
+        'data': data,
+        'test_date': latest.test_date.strftime('%Y-%m-%d')
+    })
 
 @app.route('/export/workout-logs')
 @login_required
