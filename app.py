@@ -723,6 +723,49 @@ def export_personal_records():
         headers={'Content-Disposition': f'attachment; filename=personal_records_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
     )
 
+@app.route('/export/bloodwork-logs')
+@login_required
+def export_bloodwork_logs():
+    """Export bloodwork data as CSV"""
+    bloodwork_logs = BloodworkLog.query.filter_by(user_id=current_user.id).order_by(BloodworkLog.test_date).all()
+    
+    # Create CSV in memory
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Write header
+    writer.writerow([
+        'test_date', 'testosterone_total', 'testosterone_free', 'shbg', 
+        'oestradiol', 'prolactin', 'hba1c', 'glucose_fasting', 
+        'insulin_fasting', 'homa_index', 'notes'
+    ])
+    
+    # Write data rows
+    for log in bloodwork_logs:
+        writer.writerow([
+            log.test_date.strftime('%Y-%m-%d %H:%M:%S'),
+            log.testosterone_total if log.testosterone_total else '',
+            log.testosterone_free if log.testosterone_free else '',
+            log.shbg if log.shbg else '',
+            log.oestradiol if log.oestradiol else '',
+            log.prolactin if log.prolactin else '',
+            log.hba1c if log.hba1c else '',
+            log.glucose_fasting if log.glucose_fasting else '',
+            log.insulin_fasting if log.insulin_fasting else '',
+            log.homa_index if log.homa_index else '',
+            log.notes if log.notes else ''
+        ])
+    
+    # Prepare response
+    output = si.getvalue()
+    si.close()
+    
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=bloodwork_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+    )
+
 
 #When running the app in development mode run the following commands 
 #In your terminal:
