@@ -911,7 +911,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://unpkg.com/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
 // Toggle bloodwork form visibility
 function toggleBloodworkForm() {
@@ -927,6 +927,16 @@ function toggleBloodworkForm() {
 // Initialize bloodwork chart if data exists
 {% if latest_bloodwork %}
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded, hiding chart section');
+        const chartContainer = document.querySelector('.chart-container');
+        if (chartContainer) {
+            chartContainer.style.display = 'none';
+        }
+        return;
+    }
+    
     fetch('{{ url_for("bloodwork_chart_data") }}')
         .then(response => response.json())
         .then(data => {
