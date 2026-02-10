@@ -73,6 +73,24 @@ flask init-db
 flask create-admin
 ```
 
+6. **IMPORTANT**: Run the migration script to add database indexes (one-time setup):
+```bash
+python migrate_add_indexes.py
+```
+
+This migration adds critical database indexes that significantly improve performance, especially when the database grows. Without these indexes, queries can become very slow and may cause worker timeouts.
+
+### Performance Optimization
+
+The app includes several performance optimizations for production use:
+
+1. **Database Indexes**: Foreign key columns are indexed to speed up queries
+2. **Connection Pooling**: Configured with optimal pool sizes for concurrent requests
+3. **Connection Recycling**: Connections are recycled every hour to prevent stale connections
+4. **Pre-ping**: Database connections are verified before use to catch connection issues early
+
+If you experience slow performance or worker timeouts after deployment, ensure you've run the migration script to add the indexes.
+
 ## Usage
 
 1. Log in with your username and password

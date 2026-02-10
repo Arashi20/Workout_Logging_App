@@ -30,9 +30,9 @@ class Exercise(db.Model):
 class WorkoutSession(db.Model):
     __tablename__ = 'workout_sessions'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    end_time = db.Column(db.DateTime)
+    end_time = db.Column(db.DateTime, index=True)
     duration_minutes = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -41,8 +41,8 @@ class WorkoutSession(db.Model):
 class WorkoutLog(db.Model):
     __tablename__ = 'workout_logs'
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.id'), nullable=False)
-    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.id'), nullable=False, index=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
     set_number = db.Column(db.Integer, nullable=False)
     reps = db.Column(db.Integer, nullable=False)
     weight = db.Column(db.Float)
@@ -52,8 +52,8 @@ class WorkoutLog(db.Model):
 class PersonalRecord(db.Model):
     __tablename__ = 'personal_records'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
     weight = db.Column(db.Float, nullable=False)
     reps = db.Column(db.Integer, nullable=False)
     achieved_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -63,18 +63,18 @@ class PersonalRecord(db.Model):
 class WeightLog(db.Model):
     __tablename__ = 'weight_logs'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     weight = db.Column(db.Float, nullable=False)
     body_fat_percentage = db.Column(db.Float)
     visceral_fat = db.Column(db.Float)
     notes = db.Column(db.Text)
-    logged_at = db.Column(db.DateTime, default=datetime.utcnow)
+    logged_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 class BloodworkLog(db.Model):
     __tablename__ = 'bloodwork_logs'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    test_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    test_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
     
     # Priority 1: Gym Bro Essentials
     testosterone_total = db.Column(db.Float)  # ng/dL
