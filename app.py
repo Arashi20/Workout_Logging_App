@@ -45,14 +45,16 @@ def set_postgres_statement_timeout(dbapi_connection, connection_record):
     This applies to both psycopg2 and psycopg3 connections.
     """
     # Check if this is a PostgreSQL connection (works for both psycopg2 and psycopg3)
-    if 'psycopg' in dbapi_connection.__class__.__module__:
+    module_name = dbapi_connection.__class__.__module__
+    if 'psycopg' in module_name or 'pg8000' in module_name:
         try:
             cursor = dbapi_connection.cursor()
             cursor.execute("SET statement_timeout = '30s'")
             cursor.close()
-        except Exception as e:
-            # Log but don't fail if timeout setting fails
-            app.logger.debug(f'Could not set statement timeout: {type(e).__name__}')
+        except Exception:
+            # Catch all exceptions to ensure connection setup never fails
+            # Log only the error type to avoid exposing sensitive details
+            app.logger.debug(f'Could not set statement timeout on {module_name}')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
