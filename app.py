@@ -9,6 +9,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlalchemy.exc import SQLAlchemyError
 
 load_dotenv()
 
@@ -23,15 +26,36 @@ elif app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql://'):
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Database connection pool settings for better performance
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,          # Number of connections to maintain in the pool
-    'pool_recycle': 3600,     # Recycle connections after 1 hour
+    'pool_size': 5,           # Number of connections to maintain in the pool (reduced for Railway)
+    'pool_recycle': 300,      # Recycle connections after 5 minutes (shorter for cloud DB)
     'pool_pre_ping': True,    # Verify connections before using them
-    'max_overflow': 20        # Maximum additional connections when pool_size is exceeded
+    'max_overflow': 5,        # Maximum additional connections when pool_size is exceeded
+    'pool_timeout': 10        # Timeout for getting a connection from the pool (seconds)
 }
 # Session timeout: 20 minutes of inactivity
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
 
 db.init_app(app)
+
+# Set statement timeout for PostgreSQL connections to prevent hanging queries
+@event.listens_for(Engine, "connect")
+def set_postgres_statement_timeout(dbapi_connection, connection_record):
+    """Set a 30-second statement timeout for all PostgreSQL queries.
+    
+    This applies to both psycopg2 and psycopg3 connections.
+    """
+    # Check if this is a PostgreSQL connection (works for both psycopg2 and psycopg3)
+    module_name = dbapi_connection.__class__.__module__
+    if 'psycopg' in module_name or 'pg8000' in module_name:
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("SET statement_timeout = '30s'")
+            cursor.close()
+        except Exception:
+            # Catch all exceptions to ensure connection setup never fails
+            # Log only the error type to avoid exposing sensitive details
+            app.logger.debug(f'Could not set statement timeout on {module_name}')
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -209,19 +233,26 @@ def workout():
 @app.route('/workout/start', methods=['POST'])
 @login_required
 def start_workout():
-    # Check if there's already an active session
-    active_session = WorkoutSession.query.filter_by(
-        user_id=current_user.id,
-        end_time=None
-    ).first()
-    
-    if not active_session:
-        session = WorkoutSession(user_id=current_user.id, start_time=datetime.utcnow())
-        db.session.add(session)
-        db.session.commit()
-        flash('Workout session started!', 'success')
-    
-    return redirect(url_for('workout'))
+    try:
+        # Check if there's already an active session
+        active_session = WorkoutSession.query.filter_by(
+            user_id=current_user.id,
+            end_time=None
+        ).first()
+        
+        if not active_session:
+            session = WorkoutSession(user_id=current_user.id, start_time=datetime.utcnow())
+            db.session.add(session)
+            db.session.commit()
+            flash('Workout session started!', 'success')
+        
+        return redirect(url_for('workout'))
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        # Log only the error type to avoid exposing sensitive database details
+        app.logger.error(f'Database error starting workout session: {type(e).__name__}')
+        flash('Unable to start workout session. Please try again.', 'danger')
+        return redirect(url_for('workout'))
 
 @app.route('/workout/add_set', methods=['POST'])
 @login_required
