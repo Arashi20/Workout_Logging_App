@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 load_dotenv()
 
@@ -33,6 +35,20 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
 
 db.init_app(app)
+
+# Set statement timeout for PostgreSQL connections to prevent hanging queries
+@event.listens_for(Engine, "connect")
+def set_postgres_statement_timeout(dbapi_connection, connection_record):
+    """Set a 30-second statement timeout for all PostgreSQL queries"""
+    if 'postgresql' in str(dbapi_connection.__class__):
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("SET statement_timeout = '30s'")
+            cursor.close()
+        except Exception:
+            # If setting timeout fails (e.g., not PostgreSQL), ignore
+            pass
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
