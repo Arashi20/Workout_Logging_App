@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import SQLAlchemyError
 
 load_dotenv()
 
@@ -39,15 +40,19 @@ db.init_app(app)
 # Set statement timeout for PostgreSQL connections to prevent hanging queries
 @event.listens_for(Engine, "connect")
 def set_postgres_statement_timeout(dbapi_connection, connection_record):
-    """Set a 30-second statement timeout for all PostgreSQL queries"""
-    # Check if this is a PostgreSQL connection by checking the module
+    """Set a 30-second statement timeout for all PostgreSQL queries.
+    
+    This applies to both psycopg2 and psycopg3 connections.
+    """
+    # Check if this is a PostgreSQL connection (works for both psycopg2 and psycopg3)
     if 'psycopg' in dbapi_connection.__class__.__module__:
         try:
             cursor = dbapi_connection.cursor()
             cursor.execute("SET statement_timeout = '30s'")
             cursor.close()
-        except Exception:
-            # If setting timeout fails, ignore silently
+        except Exception as e:
+            # Log but don't fail if timeout setting fails
+            app.logger.debug(f'Could not set statement timeout: {e}')
             pass
 
 login_manager = LoginManager()
@@ -241,10 +246,10 @@ def start_workout():
             flash('Workout session started!', 'success')
         
         return redirect(url_for('workout'))
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.session.rollback()
         # Log the full error for debugging but show generic message to user
-        app.logger.error(f'Error starting workout session for user {current_user.id}: {str(e)}')
+        app.logger.error(f'Database error starting workout session for user {current_user.id}: {str(e)}')
         flash('Unable to start workout session. Please try again.', 'danger')
         return redirect(url_for('workout'))
 
