@@ -52,7 +52,7 @@ def set_postgres_statement_timeout(dbapi_connection, connection_record):
             cursor.close()
         except Exception as e:
             # Log but don't fail if timeout setting fails
-            app.logger.debug(f'Could not set statement timeout: {e}')
+            app.logger.debug(f'Could not set statement timeout: {type(e).__name__}')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -247,8 +247,8 @@ def start_workout():
         return redirect(url_for('workout'))
     except SQLAlchemyError as e:
         db.session.rollback()
-        # Log the full error for debugging but show generic message to user
-        app.logger.error(f'Database error starting workout session: {str(e)}')
+        # Log only the error type to avoid exposing sensitive database details
+        app.logger.error(f'Database error starting workout session: {type(e).__name__}')
         flash('Unable to start workout session. Please try again.', 'danger')
         return redirect(url_for('workout'))
 
