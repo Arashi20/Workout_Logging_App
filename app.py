@@ -23,10 +23,11 @@ elif app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgresql://'):
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Database connection pool settings for better performance
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,          # Number of connections to maintain in the pool
-    'pool_recycle': 3600,     # Recycle connections after 1 hour
+    'pool_size': 5,           # Number of connections to maintain in the pool (reduced for Railway)
+    'pool_recycle': 300,      # Recycle connections after 5 minutes (shorter for cloud DB)
     'pool_pre_ping': True,    # Verify connections before using them
-    'max_overflow': 20        # Maximum additional connections when pool_size is exceeded
+    'max_overflow': 5,        # Maximum additional connections when pool_size is exceeded
+    'pool_timeout': 10        # Timeout for getting a connection from the pool (seconds)
 }
 # Session timeout: 20 minutes of inactivity
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
@@ -209,19 +210,24 @@ def workout():
 @app.route('/workout/start', methods=['POST'])
 @login_required
 def start_workout():
-    # Check if there's already an active session
-    active_session = WorkoutSession.query.filter_by(
-        user_id=current_user.id,
-        end_time=None
-    ).first()
-    
-    if not active_session:
-        session = WorkoutSession(user_id=current_user.id, start_time=datetime.utcnow())
-        db.session.add(session)
-        db.session.commit()
-        flash('Workout session started!', 'success')
-    
-    return redirect(url_for('workout'))
+    try:
+        # Check if there's already an active session
+        active_session = WorkoutSession.query.filter_by(
+            user_id=current_user.id,
+            end_time=None
+        ).first()
+        
+        if not active_session:
+            session = WorkoutSession(user_id=current_user.id, start_time=datetime.utcnow())
+            db.session.add(session)
+            db.session.commit()
+            flash('Workout session started!', 'success')
+        
+        return redirect(url_for('workout'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error starting workout session: {str(e)}', 'danger')
+        return redirect(url_for('workout'))
 
 @app.route('/workout/add_set', methods=['POST'])
 @login_required
