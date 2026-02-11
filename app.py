@@ -40,13 +40,14 @@ db.init_app(app)
 @event.listens_for(Engine, "connect")
 def set_postgres_statement_timeout(dbapi_connection, connection_record):
     """Set a 30-second statement timeout for all PostgreSQL queries"""
-    if 'postgresql' in str(dbapi_connection.__class__):
+    # Check if this is a PostgreSQL connection by checking the module
+    if 'psycopg' in dbapi_connection.__class__.__module__:
         try:
             cursor = dbapi_connection.cursor()
             cursor.execute("SET statement_timeout = '30s'")
             cursor.close()
         except Exception:
-            # If setting timeout fails (e.g., not PostgreSQL), ignore
+            # If setting timeout fails, ignore silently
             pass
 
 login_manager = LoginManager()
@@ -242,7 +243,9 @@ def start_workout():
         return redirect(url_for('workout'))
     except Exception as e:
         db.session.rollback()
-        flash(f'Error starting workout session: {str(e)}', 'danger')
+        # Log the full error for debugging but show generic message to user
+        app.logger.error(f'Error starting workout session for user {current_user.id}: {str(e)}')
+        flash('Unable to start workout session. Please try again.', 'danger')
         return redirect(url_for('workout'))
 
 @app.route('/workout/add_set', methods=['POST'])
