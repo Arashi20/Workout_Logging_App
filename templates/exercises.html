@@ -92,31 +92,29 @@
     const exerciseNameDisplay = document.getElementById('exercise-name-display');
     const deleteModalCancel = document.getElementById('delete-modal-cancel');
     
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const exerciseName = this.getAttribute('data-exercise-name');
-            const deleteUrl = this.getAttribute('data-delete-url');
-            
-            // Set the exercise name in the modal
-            exerciseNameDisplay.textContent = exerciseName;
-            
-            // Set the form action to the correct delete URL
-            deleteForm.action = deleteUrl;
-            
-            // Show the modal
-            deleteModal.classList.add('active');
+    if (deleteModal && deleteForm && exerciseNameDisplay && deleteModalCancel) {
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const exerciseName = this.getAttribute('data-exercise-name');
+                const deleteUrl = this.getAttribute('data-delete-url');
+                
+                // Set the exercise name in the modal
+                exerciseNameDisplay.textContent = exerciseName;
+                
+                // Set the form action to the correct delete URL
+                deleteForm.action = deleteUrl;
+                
+                // Show the modal
+                deleteModal.classList.add('active');
+            });
         });
-    });
-    
-    // Cancel button closes the modal
-    if (deleteModalCancel) {
+        
+        // Cancel button closes the modal
         deleteModalCancel.addEventListener('click', function() {
             deleteModal.classList.remove('active');
         });
-    }
-    
-    // Close modal when clicking outside
-    if (deleteModal) {
+        
+        // Close modal when clicking outside
         deleteModal.addEventListener('click', function(e) {
             if (e.target === deleteModal) {
                 deleteModal.classList.remove('active');
