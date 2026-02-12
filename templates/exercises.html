@@ -53,9 +53,7 @@
                 {% endif %}
                 <div class="exercise-footer">
                     <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
-                    <form method="POST" action="{{ url_for('delete_exercise', exercise_id=exercise.id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Delete this exercise? (Only possible if no workout logs or PRs exist)')">Delete</button>
-                    </form>
+                    <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}">Delete</button>
                 </div>
             </div>
             {% endfor %}
@@ -67,4 +65,63 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Delete Exercise Modal -->
+<div class="modal-overlay" id="delete-exercise-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Delete Exercise?</h2>
+        </div>
+        <div class="modal-body">
+            <p id="delete-exercise-message">Are you sure you want to delete <strong id="exercise-name-display"></strong>? This will also delete all associated workout logs and personal records.</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="delete-modal-cancel">Cancel</button>
+            <form method="POST" action="" id="delete-exercise-form" style="display: inline;">
+                <button type="submit" class="btn btn-danger">Yes, Delete Exercise</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Custom modal for deleting exercises
+    const deleteButtons = document.querySelectorAll('.delete-exercise-btn');
+    const deleteModal = document.getElementById('delete-exercise-modal');
+    const deleteForm = document.getElementById('delete-exercise-form');
+    const exerciseNameDisplay = document.getElementById('exercise-name-display');
+    const deleteModalCancel = document.getElementById('delete-modal-cancel');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const exerciseId = this.getAttribute('data-exercise-id');
+            const exerciseName = this.getAttribute('data-exercise-name');
+            
+            // Set the exercise name in the modal
+            exerciseNameDisplay.textContent = exerciseName;
+            
+            // Set the form action to the correct delete URL
+            deleteForm.action = `/exercises/delete/${exerciseId}`;
+            
+            // Show the modal
+            deleteModal.classList.add('active');
+        });
+    });
+    
+    // Cancel button closes the modal
+    if (deleteModalCancel) {
+        deleteModalCancel.addEventListener('click', function() {
+            deleteModal.classList.remove('active');
+        });
+    }
+    
+    // Close modal when clicking outside
+    if (deleteModal) {
+        deleteModal.addEventListener('click', function(e) {
+            if (e.target === deleteModal) {
+                deleteModal.classList.remove('active');
+            }
+        });
+    }
+</script>
 {% endblock %}
