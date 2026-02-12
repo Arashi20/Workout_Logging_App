@@ -53,7 +53,7 @@
                 {% endif %}
                 <div class="exercise-footer">
                     <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
-                    <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}">Delete</button>
+                    <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}" data-delete-url="{{ url_for('delete_exercise', exercise_id=exercise.id) }}">Delete</button>
                 </div>
             </div>
             {% endfor %}
@@ -94,14 +94,14 @@
     
     deleteButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const exerciseId = this.getAttribute('data-exercise-id');
             const exerciseName = this.getAttribute('data-exercise-name');
+            const deleteUrl = this.getAttribute('data-delete-url');
             
             // Set the exercise name in the modal
             exerciseNameDisplay.textContent = exerciseName;
             
             // Set the form action to the correct delete URL
-            deleteForm.action = `/exercises/delete/${exerciseId}`;
+            deleteForm.action = deleteUrl;
             
             // Show the modal
             deleteModal.classList.add('active');
