@@ -41,7 +41,7 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="weight" id="weight-label">Weight (kg)</label>
+                    <label for="weight" id="weight-label" data-default-label="Weight (kg)" data-bodyweight-label="Extra Weight (kg)">Weight (kg)</label>
                     <input type="number" id="weight" name="weight" step="0.5" min="0">
                 </div>
 
@@ -193,9 +193,9 @@
         // Update weight label based on exercise type
         const weightLabel = document.getElementById('weight-label');
         if (exercise.is_bodyweight) {
-            weightLabel.textContent = 'Extra Weight (kg)';
+            weightLabel.textContent = weightLabel.dataset.bodyweightLabel;
         } else {
-            weightLabel.textContent = 'Weight (kg)';
+            weightLabel.textContent = weightLabel.dataset.defaultLabel;
         }
     }
     
