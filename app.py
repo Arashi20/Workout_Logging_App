@@ -385,7 +385,7 @@ def delete_set(log_id):
     ).first()
     
     if not active_session or workout_log.session_id != active_session.id:
-        flash('Cannot delete this set', 'error')
+        flash('This set cannot be deleted because it does not belong to your active workout session', 'error')
         return redirect(url_for('workout'))
     
     # Delete the set
