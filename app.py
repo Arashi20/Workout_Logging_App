@@ -954,6 +954,8 @@ def migrate_schema():
     """Run all necessary schema migrations to update the database."""
     print('Running schema migrations...')
     
+    db_type = None  # Initialize for error handling
+    
     try:
         # Determine database type
         db_type = db.engine.dialect.name
@@ -961,7 +963,8 @@ def migrate_schema():
         # Get actual columns using raw SQL queries specific to each database type
         if db_type == 'sqlite':
             result = db.session.execute(text("PRAGMA table_info(exercises)")).fetchall()
-            actual_columns = [row[1] for row in result]  # Column name is at index 1
+            # PRAGMA table_info returns: (cid, name, type, notnull, dflt_value, pk)
+            actual_columns = [row[1] for row in result]  # name is at index 1
         elif db_type == 'postgresql':
             result = db.session.execute(text(
                 "SELECT column_name FROM information_schema.columns "
@@ -1005,7 +1008,8 @@ def migrate_schema():
         
     except Exception as e:
         db.session.rollback()
-        print(f'\n✗ Error during migration: {e}')
+        db_info = f' ({db_type})' if db_type else ''
+        print(f'\n✗ Error during migration{db_info}: {e}')
         print('\nIf you continue to have issues, you may need to manually add the column:')
         print('  For PostgreSQL: ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL;')
         raise

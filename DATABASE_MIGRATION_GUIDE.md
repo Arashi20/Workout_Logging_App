@@ -106,6 +106,21 @@ Ensure your database user has `ALTER TABLE` permissions. In Railway, the default
 ## Best Practices
 
 1. **Always backup your database** before running migrations in production
+   
+   **For Railway PostgreSQL:**
+   - Railway doesn't have built-in backup UI, but you can use `pg_dump`:
+   ```bash
+   # In Railway console or locally with DATABASE_URL
+   pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
+   ```
+   - Alternatively, Railway automatically creates daily backups (check your plan)
+   - For critical data, consider using Railway's built-in backup features or external backup solutions
+   
+   **For SQLite (local development):**
+   ```bash
+   cp workout.db workout.db.backup
+   ```
+
 2. **Test migrations locally first** if possible
 3. **Run migrations during low-traffic periods** to minimize user impact
 4. **Monitor logs** after migration to ensure everything works correctly
