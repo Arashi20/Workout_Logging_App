@@ -224,7 +224,7 @@ def workout():
     
     exercises = Exercise.query.order_by(Exercise.name).all()
     # Convert Exercise objects to dictionaries for JSON serialization
-    exercises_list = [{'id': ex.id, 'name': ex.name} for ex in exercises]
+    exercises_list = [{'id': ex.id, 'name': ex.name, 'is_bodyweight': ex.is_bodyweight} for ex in exercises]
     workout_logs = []
     
     if active_session:
@@ -551,6 +551,7 @@ def add_exercise():
     name = request.form.get('name', '').strip()
     description = request.form.get('description', '').strip()
     exercise_type = request.form.get('exercise_type', '').strip()
+    is_bodyweight = request.form.get('is_bodyweight') == 'on'
     
     # Validate exercise name
     if not name or len(name) < 2:
@@ -569,7 +570,8 @@ def add_exercise():
     exercise = Exercise(
         name=name,
         description=description or None,
-        exercise_type=exercise_type or None
+        exercise_type=exercise_type or None,
+        is_bodyweight=is_bodyweight
     )
     db.session.add(exercise)
     db.session.commit()

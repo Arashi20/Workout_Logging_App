@@ -338,6 +338,46 @@ body {
     gap: 1rem;
 }
 
+/* Checkbox Group Styles */
+.checkbox-group {
+    margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.checkbox-label:hover {
+    background-color: var(--bg-color);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin-top: 0.25rem;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-label span {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.checkbox-label .helper-text {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+}
+
 /* Landing Page */
 .landing-container {
     text-align: center;
@@ -767,12 +807,27 @@ body {
     margin-bottom: 0.5rem;
 }
 
+.exercise-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .exercise-type {
     background-color: var(--success-color);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.875rem;
+}
+
+.bodyweight-badge {
+    background-color: var(--accent-gold);
+    color: var(--primary-dark);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .exercise-description {
