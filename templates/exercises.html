@@ -29,6 +29,14 @@
                 <textarea id="description" name="description" rows="3" placeholder="Optional: Add notes about form, muscles worked, etc. (Write in natural language)"></textarea>
             </div>
 
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="is_bodyweight" name="is_bodyweight">
+                    <span>Bodyweight Exercise</span>
+                    <small class="helper-text">Check this for exercises like push-ups, pull-ups, back extensions, etc. where weight input represents extra weight added.</small>
+                </label>
+            </div>
+
             <button type="submit" class="btn btn-primary">Add Exercise</button>
         </form>
     </div>
@@ -43,9 +51,14 @@
                 <div class="exercise-card">
                     <div class="exercise-header">
                         <h3>{{ exercise.name }}</h3>
-                        {% if exercise.exercise_type %}
-                        <span class="exercise-type">{{ exercise.exercise_type }}</span>
-                        {% endif %}
+                        <div class="exercise-badges">
+                            {% if exercise.exercise_type %}
+                            <span class="exercise-type">{{ exercise.exercise_type }}</span>
+                            {% endif %}
+                            {% if exercise.is_bodyweight %}
+                            <span class="bodyweight-badge">Bodyweight</span>
+                            {% endif %}
+                        </div>
                     </div>
                     {% if exercise.description %}
                     <p class="exercise-description">{{ exercise.description }}</p>
