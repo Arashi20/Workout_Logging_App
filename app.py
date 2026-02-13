@@ -491,16 +491,15 @@ def weight_tracker_data():
 @app.route('/exercises')
 @login_required
 def exercises():
-    all_exercises = Exercise.query.order_by(Exercise.exercise_type, Exercise.name).all()
+    all_exercises = Exercise.query.order_by(Exercise.name).all()
     
-    # Group exercises by type
-    grouped_exercises = {}
+    # Group exercises by type using a dictionary
+    from collections import defaultdict
+    grouped_exercises = defaultdict(list)
     exercise_types_order = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
     
     for exercise in all_exercises:
         ex_type = exercise.exercise_type or 'Uncategorized'
-        if ex_type not in grouped_exercises:
-            grouped_exercises[ex_type] = []
         grouped_exercises[ex_type].append(exercise)
     
     # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
