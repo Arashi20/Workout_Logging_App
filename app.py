@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
-from sqlalchemy import event
+from sqlalchemy import event, text, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -898,6 +898,7 @@ def export_bloodwork_logs():
 #In your terminal:
 # flask init-db          # Initialize database tables (creates tables if they don't exist)
 # flask create-admin     # Create admin user
+# flask migrate-schema   # Run schema migrations to add missing columns (preserves data)
 # flask reset-db         # Drop and recreate all tables (WARNING: deletes all data!)
 
 def _create_admin_user():
@@ -947,6 +948,71 @@ def reset_db():
     username = _create_admin_user()
     print(f'Admin user recreated: {username}')
     print('Database reset complete!')
+
+@app.cli.command()
+def migrate_schema():
+    """Run all necessary schema migrations to update the database."""
+    print('Running schema migrations...')
+    
+    db_type = None  # Initialize for error handling
+    
+    try:
+        # Determine database type
+        db_type = db.engine.dialect.name
+        
+        # Get actual columns using raw SQL queries specific to each database type
+        if db_type == 'sqlite':
+            result = db.session.execute(text("PRAGMA table_info(exercises)")).fetchall()
+            # PRAGMA table_info returns: (cid, name, type, notnull, dflt_value, pk)
+            actual_columns = [row[1] for row in result]  # name is at index 1
+        elif db_type == 'postgresql':
+            result = db.session.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'exercises' ORDER BY ordinal_position"
+            )).fetchall()
+            actual_columns = [row[0] for row in result]
+        else:
+            # Fallback to inspector for other databases
+            inspector = inspect(db.engine)
+            if 'exercises' not in inspector.get_table_names():
+                print('Exercises table does not exist. Creating all tables...')
+                db.create_all()
+                print('All tables created successfully.')
+                return
+            actual_columns = [col['name'] for col in inspector.get_columns('exercises')]
+        
+        print(f'Current columns in exercises table: {", ".join(actual_columns)}')
+        
+        # Migration 1: Add is_bodyweight column if missing
+        if 'is_bodyweight' not in actual_columns:
+            print('Adding is_bodyweight column to exercises table...')
+            
+            # Add the new column with default value False
+            if db_type == 'sqlite':
+                # SQLite uses 0/1 for boolean values instead of TRUE/FALSE
+                db.session.execute(text(
+                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT 0 NOT NULL"
+                ))
+            else:
+                # PostgreSQL and other databases
+                db.session.execute(text(
+                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL"
+                ))
+            
+            db.session.commit()
+            print(f'✓ Successfully added is_bodyweight column ({db_type}).')
+        else:
+            print('✓ is_bodyweight column already exists.')
+        
+        print('\nAll migrations completed successfully!')
+        
+    except Exception as e:
+        db.session.rollback()
+        db_info = f' ({db_type})' if db_type else ''
+        print(f'\n✗ Error during migration{db_info}: {e}')
+        print('\nIf you continue to have issues, you may need to manually add the column:')
+        print('  For PostgreSQL: ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL;')
+        raise
 
 if __name__ == '__main__':
     with app.app_context():

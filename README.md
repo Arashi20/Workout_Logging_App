@@ -48,9 +48,11 @@ flask create-admin
 
 **Note**: If you make changes to the database models and need to update the schema:
 ```bash
+flask migrate-schema  # Automatically adds missing columns (preserves data)
+# OR
 flask reset-db  # WARNING: This drops all tables and recreates them, deleting all data!
 ```
-This is useful for testing/development when you're the sole user and don't mind losing test data.
+The `migrate-schema` command is recommended as it preserves your data, while `reset-db` is useful for testing/development when you don't mind losing test data.
 
 6. Run the application:
 ```bash
@@ -81,14 +83,25 @@ flask create-admin
 
 6. **Database Schema Updates**: 
 
-   **Option 1 - Quick Reset (for testing/development, deletes all data)**:
+   **Option 1 - Automatic Migration (RECOMMENDED)**:
+   Run the built-in migration command to update your database schema:
+   ```bash
+   flask migrate-schema
+   ```
+   This command will:
+   - Check your current database schema
+   - Add any missing columns (like `is_bodyweight`)
+   - Display what changes were made
+   - Preserve all your existing data
+   
+   **Option 2 - Quick Reset (for testing/development, deletes all data)**:
    If you're testing the app and don't mind losing data, the simplest approach is to reset the database:
    ```bash
    flask reset-db  # WARNING: Drops all tables and recreates them with current schema
    ```
 
-   **Option 2 - Migration Scripts (preserves data)**:
-   If you have data you want to keep, run the migration scripts:
+   **Option 3 - Manual Migration Scripts (legacy method)**:
+   If you prefer to run migration scripts directly:
    ```bash
    python migrate_add_indexes.py
    python migrate_add_bodyweight.py
@@ -98,7 +111,9 @@ flask create-admin
    - `migrate_add_indexes.py`: Critical database indexes that significantly improve performance
    - `migrate_add_bodyweight.py`: The `is_bodyweight` column to the exercises table
 
-   **Note**: The migration scripts are idempotent (safe to run multiple times).
+   **Note**: All migration methods are idempotent (safe to run multiple times).
+   
+   **Troubleshooting**: If you encounter database schema issues, see [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) for detailed troubleshooting steps.
 
 ### Performance Optimization
 
