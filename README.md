@@ -112,6 +112,8 @@ flask create-admin
    - `migrate_add_bodyweight.py`: The `is_bodyweight` column to the exercises table
 
    **Note**: All migration methods are idempotent (safe to run multiple times).
+   
+   **Troubleshooting**: If you encounter database schema issues, see [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) for detailed troubleshooting steps.
 
 ### Performance Optimization
 
