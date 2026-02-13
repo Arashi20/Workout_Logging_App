@@ -372,6 +372,29 @@ def cancel_workout():
     
     return redirect(url_for('workout'))
 
+@app.route('/workout/delete_set/<int:log_id>', methods=['POST'])
+@login_required
+def delete_set(log_id):
+    # Get the workout log entry
+    workout_log = WorkoutLog.query.get_or_404(log_id)
+    
+    # Verify the log belongs to the current user's active session
+    active_session = WorkoutSession.query.filter_by(
+        user_id=current_user.id,
+        end_time=None
+    ).first()
+    
+    if not active_session or workout_log.session_id != active_session.id:
+        flash('This set cannot be deleted because it does not belong to your active workout session', 'error')
+        return redirect(url_for('workout'))
+    
+    # Delete the set
+    db.session.delete(workout_log)
+    db.session.commit()
+    flash('Set deleted successfully', 'success')
+    
+    return redirect(url_for('workout'))
+
 def update_pr(user_id, exercise_id, weight, reps):
     """Update personal record if the new weight is higher"""
     pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
