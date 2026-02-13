@@ -3,6 +3,8 @@ import csv
 import json
 from io import StringIO
 from pathlib import Path
+from collections import defaultdict
+from operator import attrgetter
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,6 +16,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
 load_dotenv()
+
+# Constants
+EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -514,8 +519,31 @@ def weight_tracker_data():
 @app.route('/exercises')
 @login_required
 def exercises():
-    all_exercises = Exercise.query.order_by(Exercise.name).all()
-    return render_template('exercises.html', exercises=all_exercises)
+    all_exercises = Exercise.query.all()
+    
+    # Group exercises by type
+    grouped_exercises = defaultdict(list)
+    
+    for exercise in all_exercises:
+        ex_type = exercise.exercise_type or 'Uncategorized'
+        grouped_exercises[ex_type].append(exercise)
+    
+    # Sort exercises within each group alphabetically by name (case-insensitive)
+    for ex_type in grouped_exercises:
+        grouped_exercises[ex_type].sort(key=lambda e: e.name.lower())
+    
+    # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
+    sorted_groups = []
+    for ex_type in EXERCISE_TYPES:
+        if ex_type in grouped_exercises:
+            sorted_groups.append((ex_type, grouped_exercises[ex_type]))
+    
+    # Add any remaining types (Uncategorized or old types)
+    for ex_type, exercises_list in grouped_exercises.items():
+        if ex_type not in EXERCISE_TYPES:
+            sorted_groups.append((ex_type, exercises_list))
+    
+    return render_template('exercises.html', grouped_exercises=sorted_groups, exercise_types=EXERCISE_TYPES)
 
 @app.route('/exercises/add', methods=['POST'])
 @login_required
