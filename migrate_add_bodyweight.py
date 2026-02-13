@@ -5,27 +5,37 @@ Run this script to update existing databases with the new column.
 """
 
 from app import app, db
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 def migrate():
     with app.app_context():
         try:
-            # Check if column already exists
-            result = db.session.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_name='exercises' AND column_name='is_bodyweight'"
-            ))
+            # Use SQLAlchemy inspector to check if column exists (works for both SQLite and PostgreSQL)
+            inspector = inspect(db.engine)
+            columns = [col['name'] for col in inspector.get_columns('exercises')]
             
-            if result.fetchone():
+            if 'is_bodyweight' in columns:
                 print("Column 'is_bodyweight' already exists. No migration needed.")
                 return
             
+            # Determine database type
+            db_type = db.engine.dialect.name
+            
             # Add the new column with default value False
-            db.session.execute(text(
-                "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL"
-            ))
+            if db_type == 'sqlite':
+                # SQLite doesn't support adding columns with DEFAULT and NOT NULL in one step
+                # when there's existing data, so we do it in two steps
+                db.session.execute(text(
+                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT 0 NOT NULL"
+                ))
+            else:
+                # PostgreSQL and other databases
+                db.session.execute(text(
+                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL"
+                ))
+            
             db.session.commit()
-            print("Successfully added 'is_bodyweight' column to exercises table.")
+            print(f"Successfully added 'is_bodyweight' column to exercises table ({db_type}).")
             
         except Exception as e:
             db.session.rollback()
