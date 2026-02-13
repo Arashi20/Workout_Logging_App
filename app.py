@@ -900,6 +900,16 @@ def export_bloodwork_logs():
 # flask create-admin     # Create admin user
 # flask reset-db         # Drop and recreate all tables (WARNING: deletes all data!)
 
+def _create_admin_user():
+    """Helper function to create admin user."""
+    username = os.getenv('ADMIN_USERNAME', 'admin')
+    password = os.getenv('ADMIN_PASSWORD', 'admin123')
+    
+    user = User(username=username, password=generate_password_hash(password))
+    db.session.add(user)
+    db.session.commit()
+    return username
+
 @app.cli.command()
 def init_db():
     """Initialize the database."""
@@ -910,16 +920,13 @@ def init_db():
 def create_admin():
     """Create admin user."""
     username = os.getenv('ADMIN_USERNAME', 'admin')
-    password = os.getenv('ADMIN_PASSWORD', 'admin123')
     
     user = User.query.filter_by(username=username).first()
     if user:
         print(f'User {username} already exists.')
         return
     
-    user = User(username=username, password=generate_password_hash(password))
-    db.session.add(user)
-    db.session.commit()
+    username = _create_admin_user()
     print(f'Admin user created: {username}')
 
 @app.cli.command()
@@ -937,12 +944,7 @@ def reset_db():
     print('All tables recreated with current schema.')
     
     # Recreate admin user
-    username = os.getenv('ADMIN_USERNAME', 'admin')
-    password = os.getenv('ADMIN_PASSWORD', 'admin123')
-    
-    user = User(username=username, password=generate_password_hash(password))
-    db.session.add(user)
-    db.session.commit()
+    username = _create_admin_user()
     print(f'Admin user recreated: {username}')
     print('Database reset complete!')
 
