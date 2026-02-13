@@ -896,8 +896,19 @@ def export_bloodwork_logs():
 
 #When running the app in development mode run the following commands 
 #In your terminal:
-# flask init-db
-# flask create-admin
+# flask init-db          # Initialize database tables (creates tables if they don't exist)
+# flask create-admin     # Create admin user
+# flask reset-db         # Drop and recreate all tables (WARNING: deletes all data!)
+
+def _create_admin_user():
+    """Helper function to create admin user."""
+    username = os.getenv('ADMIN_USERNAME', 'admin')
+    password = os.getenv('ADMIN_PASSWORD', 'admin123')
+    
+    user = User(username=username, password=generate_password_hash(password))
+    db.session.add(user)
+    db.session.commit()
+    return username
 
 @app.cli.command()
 def init_db():
@@ -909,17 +920,33 @@ def init_db():
 def create_admin():
     """Create admin user."""
     username = os.getenv('ADMIN_USERNAME', 'admin')
-    password = os.getenv('ADMIN_PASSWORD', 'admin123')
     
     user = User.query.filter_by(username=username).first()
     if user:
         print(f'User {username} already exists.')
         return
     
-    user = User(username=username, password=generate_password_hash(password))
-    db.session.add(user)
-    db.session.commit()
+    username = _create_admin_user()
     print(f'Admin user created: {username}')
+
+@app.cli.command()
+def reset_db():
+    """Drop all tables and recreate them. WARNING: This will delete all data!"""
+    print('WARNING: This will delete ALL data in the database!')
+    print('This command should only be used in testing/development.')
+    
+    # Drop all tables
+    db.drop_all()
+    print('All tables dropped.')
+    
+    # Recreate all tables with current schema
+    db.create_all()
+    print('All tables recreated with current schema.')
+    
+    # Recreate admin user
+    username = _create_admin_user()
+    print(f'Admin user recreated: {username}')
+    print('Database reset complete!')
 
 if __name__ == '__main__':
     with app.app_context():
