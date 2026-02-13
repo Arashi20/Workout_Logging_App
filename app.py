@@ -338,9 +338,7 @@ def add_set():
     db.session.add(workout_log)
     db.session.commit()
     
-    # Update PR if applicable
-    if set_type == 'working' and weight_float:
-        update_pr(current_user.id, exercise.id, weight_float, reps_int)
+    # Note: PRs are updated when the workout is finished, not during the session
     
     flash('Set added successfully!', 'success')
     return redirect(url_for('workout'))
@@ -354,6 +352,18 @@ def finish_workout():
     ).first()
     
     if active_session:
+        # Process all working sets from this session and update PRs
+        # Note: Query already filters for set_type='working', so we only need to check for weight
+        workout_logs = WorkoutLog.query.filter_by(
+            session_id=active_session.id,
+            set_type='working'
+        ).all()
+        
+        for log in workout_logs:
+            if log.weight:  # Only update PR if weight is recorded
+                update_pr(current_user.id, log.exercise_id, log.weight, log.reps)
+        
+        # Mark session as finished
         active_session.end_time = datetime.utcnow()
         duration = (active_session.end_time - active_session.start_time).total_seconds() / 60
         active_session.duration_minutes = int(duration)
