@@ -18,11 +18,9 @@
                 <label for="exercise_type">Exercise Type</label>
                 <select id="exercise_type" name="exercise_type">
                     <option value="">Select Type</option>
-                    <option value="Pull">Pull</option>
-                    <option value="Push">Push</option>
-                    <option value="Legs">Legs</option>
-                    <option value="Core">Core</option>
-                    <option value="Cardio">Cardio</option>
+                    {% for ex_type in exercise_types %}
+                    <option value="{{ ex_type }}">{{ ex_type }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
