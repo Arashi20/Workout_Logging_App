@@ -18,12 +18,11 @@
                 <label for="exercise_type">Exercise Type</label>
                 <select id="exercise_type" name="exercise_type">
                     <option value="">Select Type</option>
-                    <option value="Strength">Strength</option>
+                    <option value="Pull">Pull</option>
+                    <option value="Push">Push</option>
+                    <option value="Legs">Legs</option>
+                    <option value="Core">Core</option>
                     <option value="Cardio">Cardio</option>
-                    <option value="Flexibility">Flexibility</option>
-                    <option value="Compound">Compound</option>
-                    <option value="Isolation">Isolation</option>
-                    <option value="Other">Other</option>
                 </select>
             </div>
 
@@ -36,28 +35,32 @@
         </form>
     </div>
 
-    {% if exercises %}
+    {% if grouped_exercises %}
     <div class="exercises-list">
-        <h2>All Exercises ({{ exercises|length }})</h2>
-        <div class="exercises-grid">
-            {% for exercise in exercises %}
-            <div class="exercise-card">
-                <div class="exercise-header">
-                    <h3>{{ exercise.name }}</h3>
-                    {% if exercise.exercise_type %}
-                    <span class="exercise-type">{{ exercise.exercise_type }}</span>
+        {% for exercise_type, exercises in grouped_exercises %}
+        <div class="exercise-category">
+            <h2>{{ exercise_type }} ({{ exercises|length }})</h2>
+            <div class="exercises-grid">
+                {% for exercise in exercises %}
+                <div class="exercise-card">
+                    <div class="exercise-header">
+                        <h3>{{ exercise.name }}</h3>
+                        {% if exercise.exercise_type %}
+                        <span class="exercise-type">{{ exercise.exercise_type }}</span>
+                        {% endif %}
+                    </div>
+                    {% if exercise.description %}
+                    <p class="exercise-description">{{ exercise.description }}</p>
                     {% endif %}
+                    <div class="exercise-footer">
+                        <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
+                        <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}" data-delete-url="{{ url_for('delete_exercise', exercise_id=exercise.id) }}">Delete</button>
+                    </div>
                 </div>
-                {% if exercise.description %}
-                <p class="exercise-description">{{ exercise.description }}</p>
-                {% endif %}
-                <div class="exercise-footer">
-                    <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
-                    <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}" data-delete-url="{{ url_for('delete_exercise', exercise_id=exercise.id) }}">Delete</button>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">

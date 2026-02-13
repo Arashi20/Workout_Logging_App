@@ -491,8 +491,30 @@ def weight_tracker_data():
 @app.route('/exercises')
 @login_required
 def exercises():
-    all_exercises = Exercise.query.order_by(Exercise.name).all()
-    return render_template('exercises.html', exercises=all_exercises)
+    all_exercises = Exercise.query.order_by(Exercise.exercise_type, Exercise.name).all()
+    
+    # Group exercises by type
+    grouped_exercises = {}
+    exercise_types_order = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
+    
+    for exercise in all_exercises:
+        ex_type = exercise.exercise_type or 'Uncategorized'
+        if ex_type not in grouped_exercises:
+            grouped_exercises[ex_type] = []
+        grouped_exercises[ex_type].append(exercise)
+    
+    # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
+    sorted_groups = []
+    for ex_type in exercise_types_order:
+        if ex_type in grouped_exercises:
+            sorted_groups.append((ex_type, grouped_exercises[ex_type]))
+    
+    # Add any remaining types (Uncategorized or old types)
+    for ex_type, exercises_list in grouped_exercises.items():
+        if ex_type not in exercise_types_order:
+            sorted_groups.append((ex_type, exercises_list))
+    
+    return render_template('exercises.html', grouped_exercises=sorted_groups)
 
 @app.route('/exercises/add', methods=['POST'])
 @login_required
