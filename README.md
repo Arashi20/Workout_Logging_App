@@ -46,6 +46,12 @@ flask init-db
 flask create-admin
 ```
 
+**Note**: If you make changes to the database models and need to update the schema:
+```bash
+flask reset-db  # WARNING: This drops all tables and recreates them, deleting all data!
+```
+This is useful for testing/development when you're the sole user and don't mind losing test data.
+
 6. Run the application:
 ```bash
 python app.py
@@ -73,15 +79,26 @@ flask init-db
 flask create-admin
 ```
 
-6. **IMPORTANT**: Run the migration scripts (one-time setup):
-```bash
-python migrate_add_indexes.py
-python migrate_add_bodyweight.py
-```
+6. **Database Schema Updates**: 
 
-These migrations add:
-- `migrate_add_indexes.py`: Critical database indexes that significantly improve performance, especially when the database grows. Without this, queries can become very slow and may cause worker timeouts.
-- `migrate_add_bodyweight.py`: The `is_bodyweight` column to the exercises table for tracking bodyweight exercises. Without this, the exercises, PRs, and workout logging pages will not work.
+   **Option 1 - Quick Reset (for testing/development, deletes all data)**:
+   If you're testing the app and don't mind losing data, the simplest approach is to reset the database:
+   ```bash
+   flask reset-db  # WARNING: Drops all tables and recreates them with current schema
+   ```
+
+   **Option 2 - Migration Scripts (preserves data)**:
+   If you have data you want to keep, run the migration scripts:
+   ```bash
+   python migrate_add_indexes.py
+   python migrate_add_bodyweight.py
+   ```
+
+   These migrations add:
+   - `migrate_add_indexes.py`: Critical database indexes that significantly improve performance
+   - `migrate_add_bodyweight.py`: The `is_bodyweight` column to the exercises table
+
+   **Note**: The migration scripts are idempotent (safe to run multiple times).
 
 ### Performance Optimization
 
