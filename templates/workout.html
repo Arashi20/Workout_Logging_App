@@ -183,8 +183,8 @@
                 fragment.appendChild(document.createTextNode(' - ' + setInfo));
                 deleteSetMessage.appendChild(fragment);
                 
-                // Update the form action - Flask URL pattern is generated server-side
-                deleteSetForm.action = '{{ url_for("delete_set", log_id="__LOG_ID__") }}'.replace('__LOG_ID__', logId);
+                // Update the form action - construct URL directly to avoid template rendering issues
+                deleteSetForm.action = '/workout/delete_set/' + logId;
                 
                 // Show the modal
                 deleteSetModal.classList.add('active');
