@@ -4,6 +4,7 @@ import json
 from io import StringIO
 from pathlib import Path
 from collections import defaultdict
+from operator import attrgetter
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -504,9 +505,9 @@ def exercises():
         ex_type = exercise.exercise_type or 'Uncategorized'
         grouped_exercises[ex_type].append(exercise)
     
-    # Sort exercises within each group alphabetically by name
+    # Sort exercises within each group alphabetically by name (case-insensitive)
     for ex_type in grouped_exercises:
-        grouped_exercises[ex_type].sort(key=lambda e: e.name)
+        grouped_exercises[ex_type].sort(key=lambda e: e.name.lower())
     
     # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
     sorted_groups = []
