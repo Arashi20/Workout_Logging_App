@@ -71,6 +71,9 @@
                         {% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps
                     </span>
                     <span class="set-type">{{ log.set_type }}</span>
+                    <form method="POST" action="{{ url_for('delete_set', log_id=log.id) }}" style="display: inline;">
+                        <button type="submit" class="btn-delete" onclick="return confirm('Delete this set?');">×</button>
+                    </form>
                 </div>
             {% endfor %}
         </div>
