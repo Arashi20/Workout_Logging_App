@@ -353,6 +353,7 @@ def finish_workout():
     
     if active_session:
         # Process all working sets from this session and update PRs
+        # Note: Query already filters for set_type='working', so we only need to check for weight
         workout_logs = WorkoutLog.query.filter_by(
             session_id=active_session.id,
             set_type='working'
