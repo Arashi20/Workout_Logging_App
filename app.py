@@ -3,6 +3,7 @@ import csv
 import json
 from io import StringIO
 from pathlib import Path
+from collections import defaultdict
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -494,7 +495,6 @@ def exercises():
     all_exercises = Exercise.query.order_by(Exercise.name).all()
     
     # Group exercises by type using a dictionary
-    from collections import defaultdict
     grouped_exercises = defaultdict(list)
     exercise_types_order = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
     
