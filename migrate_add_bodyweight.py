@@ -23,8 +23,7 @@ def migrate():
             
             # Add the new column with default value False
             if db_type == 'sqlite':
-                # SQLite doesn't support adding columns with DEFAULT and NOT NULL in one step
-                # when there's existing data, so we do it in two steps
+                # SQLite uses 0/1 for boolean values instead of TRUE/FALSE
                 db.session.execute(text(
                     "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT 0 NOT NULL"
                 ))

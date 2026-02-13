@@ -80,10 +80,8 @@ python migrate_add_bodyweight.py
 ```
 
 These migrations add:
-- Critical database indexes that significantly improve performance, especially when the database grows
-- The `is_bodyweight` column to the exercises table for tracking bodyweight exercises
-
-Without these migrations, queries can become very slow and may cause worker timeouts, and the exercises page will not work.
+- `migrate_add_indexes.py`: Critical database indexes that significantly improve performance, especially when the database grows. Without this, queries can become very slow and may cause worker timeouts.
+- `migrate_add_bodyweight.py`: The `is_bodyweight` column to the exercises table for tracking bodyweight exercises. Without this, the exercises, PRs, and workout logging pages will not work.
 
 ### Performance Optimization
 
