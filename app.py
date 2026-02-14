@@ -14,6 +14,7 @@ from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecor
 from sqlalchemy import event, text, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
+import click
 
 load_dotenv()
 
@@ -1013,6 +1014,19 @@ def migrate_schema():
         print('\nIf you continue to have issues, you may need to manually add the column:')
         print('  For PostgreSQL: ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL;')
         raise
+
+
+@app.cli.command('reset-db')
+def reset_db_command():
+    """Drop all tables and recreate them. WARNING: This deletes all data!"""
+    if click.confirm('This will DELETE ALL DATA in the database. Are you sure?'):
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+            click.echo('Database has been reset successfully!')
+    else:
+        click.echo('Reset cancelled.')
+
 
 if __name__ == '__main__':
     with app.app_context():
