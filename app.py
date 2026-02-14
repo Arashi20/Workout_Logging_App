@@ -1016,18 +1016,6 @@ def migrate_schema():
         raise
 
 
-@app.cli.command('reset-db')
-def reset_db_command():
-    """Drop all tables and recreate them. WARNING: This deletes all data!"""
-    if click.confirm('This will DELETE ALL DATA in the database. Are you sure?'):
-        with app.app_context():
-            db.drop_all()
-            db.create_all()
-            click.echo('Database has been reset successfully!')
-    else:
-        click.echo('Reset cancelled.')
-
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
