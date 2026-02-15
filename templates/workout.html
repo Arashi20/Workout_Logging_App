@@ -288,11 +288,6 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
-            
-            // Show warmup option for strength exercises
-            if (warmupOption) {
-                warmupOption.style.display = '';
-            }
         } else {
             // Regular strength exercise
             weightLabel.textContent = weightLabel.dataset.defaultLabel;
@@ -301,11 +296,11 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
-            
-            // Show warmup option for strength exercises
-            if (warmupOption) {
-                warmupOption.style.display = '';
-            }
+        }
+        
+        // Show warmup option for non-cardio exercises
+        if (!exercise.is_cardio && warmupOption) {
+            warmupOption.style.display = '';
         }
     }
     
