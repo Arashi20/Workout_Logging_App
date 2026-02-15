@@ -271,15 +271,6 @@
             repsInput.placeholder = 'Duration in minutes';
             repsInput.step = '0.5';
             repsInput.min = '0.5';
-            
-            // Hide warmup option for cardio exercises
-            if (warmupOption) {
-                warmupOption.style.display = 'none';
-            }
-            // Set to working if warmup was selected
-            if (setTypeSelect.value === 'warmup') {
-                setTypeSelect.value = 'working';
-            }
         } else if (exercise.is_bodyweight) {
             // Bodyweight exercise
             weightLabel.textContent = weightLabel.dataset.bodyweightLabel;
@@ -298,9 +289,19 @@
             repsInput.min = '1';
         }
         
-        // Show warmup option for non-cardio exercises
-        if (!exercise.is_cardio && warmupOption) {
-            warmupOption.style.display = '';
+        // Handle warmup option visibility and selection
+        if (warmupOption) {
+            if (exercise.is_cardio) {
+                // Hide warmup option for cardio exercises
+                warmupOption.style.display = 'none';
+                // Set to working if warmup was selected
+                if (setTypeSelect.value === 'warmup') {
+                    setTypeSelect.value = 'working';
+                }
+            } else {
+                // Show warmup option for strength exercises
+                warmupOption.style.display = '';
+            }
         }
     }
     
