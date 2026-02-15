@@ -143,3 +143,12 @@ If you experience slow performance or worker timeouts after deployment, ensure y
 - **Frontend**: HTML, CSS, Vanilla JavaScript
 - **Charts**: Chart.js
 - **Deployment**: Railway 
+
+## Example Screenshots
+
+![Homepage](static/Homepage.png)
+
+![Exercise Library](static/Exercises.png)
+
+![Weight Tracker](static/Weight.png)
+
