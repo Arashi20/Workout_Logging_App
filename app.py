@@ -403,9 +403,9 @@ def finish_workout():
     
     if active_session:
         # Check if any sets were logged (including both working and warmup sets)
-        all_logs = WorkoutLog.query.filter_by(session_id=active_session.id).all()
+        has_logs = WorkoutLog.query.filter_by(session_id=active_session.id).first() is not None
         
-        if not all_logs:
+        if not has_logs:
             # No sets were logged, treat as cancelled workout
             db.session.delete(active_session)
             db.session.commit()
