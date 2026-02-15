@@ -982,6 +982,8 @@ def create_admin():
     username = _create_admin_user()
     print(f'Admin user created: {username}')
 
+
+
 @app.cli.command()
 def reset_db():
     """Drop all tables and recreate them. WARNING: This will delete all data!"""
@@ -1000,6 +1002,8 @@ def reset_db():
     username = _create_admin_user()
     print(f'Admin user recreated: {username}')
     print('Database reset complete!')
+
+    # Use the Railway pre-deploy input to run "flask reset-db" before deploying so that all tables are refreshed with the latest schema changes. This is especially useful during early development when the schema is changing frequently. Just be cautious when using this command as it will delete all existing data.
 
 @app.cli.command()
 def migrate_schema():
@@ -1036,6 +1040,7 @@ def migrate_schema():
         print(f'Current columns in exercises table: {", ".join(actual_columns)}')
         
         # Add column(s) below if missing from the current schema
+        # In Railway, just fill in "flask migrate-schema" as the command in the pre-deploy step and it will run this migration before deploying the new code with the updated model
 
         
         
