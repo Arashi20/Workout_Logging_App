@@ -359,28 +359,31 @@
     
     // Form validation to ensure an exercise is selected
     const addSetForm = document.getElementById('add-set-form');
-    const validationMessage = document.getElementById('exercise-validation-message');
     
     if (addSetForm) {
+        const validationMessage = document.getElementById('exercise-validation-message');
+        
         addSetForm.addEventListener('submit', function(e) {
             if (!exerciseId.value) {
                 e.preventDefault();
                 // Show custom validation message
-                validationMessage.style.display = 'block';
-                validationMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (validationMessage) {
+                    validationMessage.style.display = 'block';
+                    validationMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
                 exerciseSearch.focus();
                 return false;
             }
         });
-    }
-    
-    // Hide validation message when user starts selecting an exercise
-    if (exerciseSearch && validationMessage) {
-        exerciseSearch.addEventListener('input', function() {
-            if (validationMessage.style.display === 'block') {
-                validationMessage.style.display = 'none';
-            }
-        });
+        
+        // Hide validation message when user starts selecting an exercise
+        if (exerciseSearch && validationMessage) {
+            exerciseSearch.addEventListener('input', function() {
+                if (validationMessage.style.display === 'block') {
+                    validationMessage.style.display = 'none';
+                }
+            });
+        }
     }
     {% endif %}
 </script>
