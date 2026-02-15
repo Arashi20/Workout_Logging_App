@@ -225,7 +225,7 @@ def workout():
     
     exercises = Exercise.query.order_by(Exercise.name).all()
     # Convert Exercise objects to dictionaries for JSON serialization
-    exercises_list = [{'id': ex.id, 'name': ex.name, 'is_bodyweight': ex.is_bodyweight} for ex in exercises]
+    exercises_list = [{'id': ex.id, 'name': ex.name, 'is_bodyweight': ex.is_bodyweight, 'is_cardio': ex.is_cardio} for ex in exercises]
     workout_logs = []
     
     if active_session:
@@ -299,43 +299,92 @@ def add_set():
         flash('Exercise not found', 'error')
         return redirect(url_for('workout'))
     
-    try:
-        reps_int = int(reps)
-        if reps_int < 1 or reps_int > 1000:
-            flash('Reps must be between 1 and 1000', 'error')
+    # Handle cardio vs non-cardio exercises
+    if exercise.is_cardio:
+        # For cardio: weight = calories, reps = time_minutes
+        calories_float = None
+        if weight:
+            try:
+                calories_float = float(weight)
+                if calories_float < 0 or calories_float > 10000:
+                    flash('Calories must be between 0 and 10000', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid calories value', 'error')
+                return redirect(url_for('workout'))
+        
+        time_float = None
+        if reps:
+            try:
+                time_float = float(reps)
+                if time_float < 0.5 or time_float > 1000:
+                    flash('Time must be between 0.5 and 1000 minutes', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid time value', 'error')
+                return redirect(url_for('workout'))
+        
+        if time_float is None:
+            flash('Time is required for cardio exercises', 'error')
             return redirect(url_for('workout'))
-    except (ValueError, TypeError):
-        flash('Invalid reps value', 'error')
-        return redirect(url_for('workout'))
-    
-    weight_float = None
-    if weight:
+        
+        # Get the current set number for this exercise in this session
+        last_set = WorkoutLog.query.filter_by(
+            session_id=active_session.id,
+            exercise_id=exercise.id
+        ).order_by(WorkoutLog.set_number.desc()).first()
+        
+        set_number = (last_set.set_number + 1) if last_set else 1
+        
+        # Add workout log for cardio
+        workout_log = WorkoutLog(
+            session_id=active_session.id,
+            exercise_id=exercise.id,
+            set_number=set_number,
+            calories=calories_float,
+            time_minutes=time_float,
+            set_type=set_type
+        )
+    else:
+        # For non-cardio: regular weight and reps
         try:
-            weight_float = float(weight)
-            if weight_float < 0 or weight_float > 10000:
-                flash('Weight must be between 0 and 10000 kg', 'error')
+            reps_int = int(reps)
+            if reps_int < 1 or reps_int > 1000:
+                flash('Reps must be between 1 and 1000', 'error')
                 return redirect(url_for('workout'))
         except (ValueError, TypeError):
-            flash('Invalid weight value', 'error')
+            flash('Invalid reps value', 'error')
             return redirect(url_for('workout'))
+        
+        weight_float = None
+        if weight:
+            try:
+                weight_float = float(weight)
+                if weight_float < 0 or weight_float > 10000:
+                    flash('Weight must be between 0 and 10000 kg', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid weight value', 'error')
+                return redirect(url_for('workout'))
+        
+        # Get the current set number for this exercise in this session
+        last_set = WorkoutLog.query.filter_by(
+            session_id=active_session.id,
+            exercise_id=exercise.id
+        ).order_by(WorkoutLog.set_number.desc()).first()
+        
+        set_number = (last_set.set_number + 1) if last_set else 1
+        
+        # Add workout log for non-cardio
+        workout_log = WorkoutLog(
+            session_id=active_session.id,
+            exercise_id=exercise.id,
+            set_number=set_number,
+            reps=reps_int,
+            weight=weight_float,
+            set_type=set_type
+        )
     
-    # Get the current set number for this exercise in this session
-    last_set = WorkoutLog.query.filter_by(
-        session_id=active_session.id,
-        exercise_id=exercise.id
-    ).order_by(WorkoutLog.set_number.desc()).first()
-    
-    set_number = (last_set.set_number + 1) if last_set else 1
-    
-    # Add workout log
-    workout_log = WorkoutLog(
-        session_id=active_session.id,
-        exercise_id=exercise.id,
-        set_number=set_number,
-        reps=reps_int,
-        weight=weight_float,
-        set_type=set_type
-    )
     db.session.add(workout_log)
     db.session.commit()
     
@@ -563,6 +612,7 @@ def add_exercise():
     description = request.form.get('description', '').strip()
     exercise_type = request.form.get('exercise_type', '').strip()
     is_bodyweight = request.form.get('is_bodyweight') == 'on'
+    is_cardio = request.form.get('is_cardio') == 'on'
     
     # Validate exercise name
     if not name or len(name) < 2:
@@ -582,7 +632,8 @@ def add_exercise():
         name=name,
         description=description or None,
         exercise_type=exercise_type or None,
-        is_bodyweight=is_bodyweight
+        is_bodyweight=is_bodyweight,
+        is_cardio=is_cardio
     )
     db.session.add(exercise)
     db.session.commit()

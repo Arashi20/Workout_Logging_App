@@ -41,13 +41,13 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="weight" id="weight-label" data-default-label="Weight (kg)" data-bodyweight-label="Extra Weight (kg)">Weight (kg)</label>
+                    <label for="weight" id="weight-label" data-default-label="Weight (kg)" data-bodyweight-label="Extra Weight (kg)" data-cardio-label="Calories">Weight (kg)</label>
                     <input type="number" id="weight" name="weight" step="0.5" min="0">
                 </div>
 
                 <div class="form-group">
-                    <label for="reps">Reps</label>
-                    <input type="number" id="reps" name="reps" min="1" required>
+                    <label for="reps" id="reps-label" data-default-label="Reps" data-cardio-label="Time (min)">Reps</label>
+                    <input type="number" id="reps" name="reps" step="1" min="1">
                 </div>
             </div>
 
@@ -68,10 +68,14 @@
                 <div class="log-item {% if log.set_type == 'warmup' %}warmup{% endif %}">
                     <span class="set-info">Set {{ log.set_number }}</span>
                     <span class="set-details">
-                        {% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps
+                        {% if log.exercise.is_cardio %}
+                            {% if log.calories %}{{ log.calories }} cal{% endif %}{% if log.calories and log.time_minutes %} / {% endif %}{% if log.time_minutes %}{{ log.time_minutes }} min{% endif %}
+                        {% else %}
+                            {% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps
+                        {% endif %}
                     </span>
                     <span class="set-type">{{ log.set_type }}</span>
-                    <button type="button" class="btn-delete" data-log-id="{{ log.id }}" data-exercise-name="{{ log.exercise.name }}" data-set-info="{% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps" aria-label="Delete set">×</button>
+                    <button type="button" class="btn-delete" data-log-id="{{ log.id }}" data-exercise-name="{{ log.exercise.name }}" data-set-info="{% if log.exercise.is_cardio %}{% if log.calories %}{{ log.calories }} cal{% endif %}{% if log.calories and log.time_minutes %} / {% endif %}{% if log.time_minutes %}{{ log.time_minutes }} min{% endif %}{% else %}{% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps{% endif %}" aria-label="Delete set">×</button>
                 </div>
             {% endfor %}
         </div>
@@ -209,6 +213,8 @@
     const exerciseSearch = document.getElementById('exercise_search');
     const exerciseId = document.getElementById('exercise_id');
     const exerciseDropdown = document.getElementById('exercise_dropdown');
+    const weightInput = document.getElementById('weight');
+    const repsInput = document.getElementById('reps');
     
     let selectedIndex = -1;
     
@@ -251,12 +257,34 @@
         exerciseDropdown.classList.remove('active');
         selectedIndex = -1;
         
-        // Update weight label based on exercise type
+        // Update labels based on exercise type
         const weightLabel = document.getElementById('weight-label');
-        if (exercise.is_bodyweight) {
+        const repsLabel = document.getElementById('reps-label');
+        
+        if (exercise.is_cardio) {
+            // Cardio exercise: change to Calories and Time
+            weightLabel.textContent = weightLabel.dataset.cardioLabel;
+            repsLabel.textContent = repsLabel.dataset.cardioLabel;
+            weightInput.placeholder = 'Calories burned';
+            repsInput.placeholder = 'Duration in minutes';
+            repsInput.step = '0.5';
+            repsInput.min = '0.5';
+        } else if (exercise.is_bodyweight) {
+            // Bodyweight exercise
             weightLabel.textContent = weightLabel.dataset.bodyweightLabel;
+            repsLabel.textContent = repsLabel.dataset.defaultLabel;
+            weightInput.placeholder = '';
+            repsInput.placeholder = '';
+            repsInput.step = '1';
+            repsInput.min = '1';
         } else {
+            // Regular strength exercise
             weightLabel.textContent = weightLabel.dataset.defaultLabel;
+            repsLabel.textContent = repsLabel.dataset.defaultLabel;
+            weightInput.placeholder = '';
+            repsInput.placeholder = '';
+            repsInput.step = '1';
+            repsInput.min = '1';
         }
     }
     
