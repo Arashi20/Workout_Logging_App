@@ -46,10 +46,10 @@ class WorkoutLog(db.Model):
     session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.id'), nullable=False, index=True)
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
     set_number = db.Column(db.Integer, nullable=False)
-    reps = db.Column(db.Integer)  # NULL for cardio exercises
-    weight = db.Column(db.Float)  # NULL for cardio exercises
-    calories = db.Column(db.Float)  # NULL for non-cardio exercises
-    time_minutes = db.Column(db.Float)  # NULL for non-cardio exercises
+    reps = db.Column(db.Integer, nullable=True)  # NULL for cardio exercises
+    weight = db.Column(db.Float, nullable=True)  # NULL for cardio exercises
+    calories = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
+    time_minutes = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
     set_type = db.Column(db.String(20), default='working')  # 'warmup' or 'working'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

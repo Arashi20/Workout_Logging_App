@@ -317,14 +317,14 @@ def add_set():
         if reps:
             try:
                 time_float = float(reps)
-                if time_float <= 0 or time_float > 1000:
-                    flash('Time must be between 0 and 1000 minutes', 'error')
+                if time_float < 0.5 or time_float > 1000:
+                    flash('Time must be between 0.5 and 1000 minutes', 'error')
                     return redirect(url_for('workout'))
             except (ValueError, TypeError):
                 flash('Invalid time value', 'error')
                 return redirect(url_for('workout'))
         
-        if not time_float:
+        if time_float is None:
             flash('Time is required for cardio exercises', 'error')
             return redirect(url_for('workout'))
         
