@@ -402,24 +402,19 @@ def finish_workout():
     ).first()
     
     if active_session:
-        # Check if any sets were logged (including both working and warmup sets)
-        has_logs = WorkoutLog.query.filter_by(session_id=active_session.id).first() is not None
+        # Get all workout logs for this session
+        all_logs = WorkoutLog.query.filter_by(session_id=active_session.id).all()
         
-        if not has_logs:
+        if not all_logs:
             # No sets were logged, treat as cancelled workout
             db.session.delete(active_session)
             db.session.commit()
             flash('No sets were logged: workout cancelled!', 'info')
         else:
-            # Process all working sets from this session and update PRs
-            # Note: Query already filters for set_type='working', so we only need to check for weight
-            workout_logs = WorkoutLog.query.filter_by(
-                session_id=active_session.id,
-                set_type='working'
-            ).all()
-            
-            for log in workout_logs:
-                if log.weight:  # Only update PR if weight is recorded
+            # Process working sets from this session and update PRs
+            # Note: Only working sets with weight are used for PR updates
+            for log in all_logs:
+                if log.set_type == 'working' and log.weight:
                     update_pr(current_user.id, log.exercise_id, log.weight, log.reps)
             
             # Mark session as finished
