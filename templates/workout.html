@@ -21,6 +21,9 @@
 
     <div class="add-set-card">
         <h2>Add Set</h2>
+        <div id="exercise-validation-message" class="validation-message" style="display: none;">
+            Please select an exercise from the dropdown before adding a set.
+        </div>
         <form method="POST" action="{{ url_for('add_set') }}" class="workout-form" id="add-set-form">
             <div class="form-row">
                 <div class="form-group">
@@ -356,15 +359,31 @@
     
     // Form validation to ensure an exercise is selected
     const addSetForm = document.getElementById('add-set-form');
+    
     if (addSetForm) {
+        const validationMessage = document.getElementById('exercise-validation-message');
+        
         addSetForm.addEventListener('submit', function(e) {
             if (!exerciseId.value) {
                 e.preventDefault();
-                alert('Please select an exercise from the dropdown');
+                // Show custom validation message
+                if (validationMessage) {
+                    validationMessage.style.display = 'block';
+                    validationMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
                 exerciseSearch.focus();
                 return false;
             }
         });
+        
+        // Hide validation message when user starts selecting an exercise
+        if (exerciseSearch && validationMessage) {
+            exerciseSearch.addEventListener('input', function() {
+                if (validationMessage.style.display === 'block') {
+                    validationMessage.style.display = 'none';
+                }
+            });
+        }
     }
     {% endif %}
 </script>
