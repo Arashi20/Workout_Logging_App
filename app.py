@@ -984,28 +984,9 @@ def migrate_schema():
         
         print(f'Current columns in exercises table: {", ".join(actual_columns)}')
         
-        # Migration 1: Add is_bodyweight column if missing
-        if 'is_bodyweight' not in actual_columns:
-            print('Adding is_bodyweight column to exercises table...')
-            
-            # Add the new column with default value False
-            if db_type == 'sqlite':
-                # SQLite uses 0/1 for boolean values instead of TRUE/FALSE
-                db.session.execute(text(
-                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT 0 NOT NULL"
-                ))
-            else:
-                # PostgreSQL and other databases
-                db.session.execute(text(
-                    "ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL"
-                ))
-            
-            db.session.commit()
-            print(f'✓ Successfully added is_bodyweight column ({db_type}).')
-        else:
-            print('✓ is_bodyweight column already exists.')
+        # Add column(s) below if missing from the current schema
+
         
-        print('\nAll migrations completed successfully!')
         
     except Exception as e:
         db.session.rollback()
