@@ -260,6 +260,8 @@
         // Update labels based on exercise type
         const weightLabel = document.getElementById('weight-label');
         const repsLabel = document.getElementById('reps-label');
+        const setTypeSelect = document.getElementById('set_type');
+        const warmupOption = setTypeSelect.querySelector('option[value="warmup"]');
         
         if (exercise.is_cardio) {
             // Cardio exercise: change to Calories and Time
@@ -285,6 +287,21 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
+        }
+        
+        // Handle warmup option visibility and selection
+        if (warmupOption) {
+            if (exercise.is_cardio) {
+                // Hide warmup option for cardio exercises
+                warmupOption.style.display = 'none';
+                // Set to working if warmup was selected
+                if (setTypeSelect.value === 'warmup') {
+                    setTypeSelect.value = 'working';
+                }
+            } else {
+                // Show warmup option for strength exercises
+                warmupOption.style.display = '';
+            }
         }
     }
     
