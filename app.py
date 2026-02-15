@@ -814,7 +814,7 @@ def export_workout_logs():
             log.exercise_name,
             log.set_number,
             log.reps if log.reps is not None else '',
-            log.weight if log.weight else '',
+            log.weight if log.weight is not None else '',
             log.calories if log.calories is not None else '',
             log.time_minutes if log.time_minutes is not None else '',
             log.set_type
