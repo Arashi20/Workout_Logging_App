@@ -260,6 +260,8 @@
         // Update labels based on exercise type
         const weightLabel = document.getElementById('weight-label');
         const repsLabel = document.getElementById('reps-label');
+        const setTypeSelect = document.getElementById('set_type');
+        const warmupOption = setTypeSelect.querySelector('option[value="warmup"]');
         
         if (exercise.is_cardio) {
             // Cardio exercise: change to Calories and Time
@@ -269,6 +271,15 @@
             repsInput.placeholder = 'Duration in minutes';
             repsInput.step = '0.5';
             repsInput.min = '0.5';
+            
+            // Hide warmup option for cardio exercises
+            if (warmupOption) {
+                warmupOption.style.display = 'none';
+            }
+            // Set to working if warmup was selected
+            if (setTypeSelect.value === 'warmup') {
+                setTypeSelect.value = 'working';
+            }
         } else if (exercise.is_bodyweight) {
             // Bodyweight exercise
             weightLabel.textContent = weightLabel.dataset.bodyweightLabel;
@@ -277,6 +288,11 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
+            
+            // Show warmup option for strength exercises
+            if (warmupOption) {
+                warmupOption.style.display = '';
+            }
         } else {
             // Regular strength exercise
             weightLabel.textContent = weightLabel.dataset.defaultLabel;
@@ -285,6 +301,11 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
+            
+            // Show warmup option for strength exercises
+            if (warmupOption) {
+                warmupOption.style.display = '';
+            }
         }
     }
     
