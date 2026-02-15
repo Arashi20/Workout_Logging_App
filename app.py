@@ -992,8 +992,7 @@ def migrate_schema():
         db.session.rollback()
         db_info = f' ({db_type})' if db_type else ''
         print(f'\n✗ Error during migration{db_info}: {e}')
-        print('\nIf you continue to have issues, you may need to manually add the column:')
-        print('  For PostgreSQL: ALTER TABLE exercises ADD COLUMN is_bodyweight BOOLEAN DEFAULT FALSE NOT NULL;')
+        print('\nIf you continue to have issues, you may need to manually add the column')
         raise
 
 
