@@ -15,11 +15,17 @@ from sqlalchemy import event, text, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 import click
+import pytz
 
 load_dotenv()
 
 # Constants
 EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
+AMSTERDAM_TZ = pytz.timezone('Europe/Amsterdam')
+
+def now_amsterdam():
+    """Get current datetime in Amsterdam timezone as naive datetime for database storage"""
+    return datetime.now(AMSTERDAM_TZ).replace(tzinfo=None)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -119,7 +125,7 @@ def index():
         stats['favorite_all_time_count'] = favorite_all_time.count if favorite_all_time else 0
         
         # 2. Most favorite workout of this year
-        current_year = datetime.utcnow().year
+        current_year = now_amsterdam().year
         year_start = datetime(current_year, 1, 1)
         
         favorite_this_year = db.session.query(
@@ -247,7 +253,7 @@ def start_workout():
         ).first()
         
         if not active_session:
-            session = WorkoutSession(user_id=current_user.id, start_time=datetime.utcnow())
+            session = WorkoutSession(user_id=current_user.id, start_time=now_amsterdam())
             db.session.add(session)
             db.session.commit()
             flash('Workout session started!', 'success')
@@ -418,7 +424,7 @@ def finish_workout():
                     update_pr(current_user.id, log.exercise_id, log.weight, log.reps)
             
             # Mark session as finished
-            active_session.end_time = datetime.utcnow()
+            active_session.end_time = now_amsterdam()
             duration = (active_session.end_time - active_session.start_time).total_seconds() / 60
             active_session.duration_minutes = int(duration)
             db.session.commit()
@@ -472,7 +478,7 @@ def update_pr(user_id, exercise_id, weight, reps):
         if pr:
             pr.weight = weight
             pr.reps = reps
-            pr.achieved_at = datetime.utcnow()
+            pr.achieved_at = now_amsterdam()
         else:
             pr = PersonalRecord(
                 user_id=user_id,
@@ -493,7 +499,7 @@ def prs():
 @login_required
 def weight_tracker():
     weight_logs = WeightLog.query.filter_by(user_id=current_user.id).order_by(WeightLog.logged_at.desc()).all()
-    return render_template('weight_tracker.html', weight_logs=weight_logs, now=datetime.utcnow())
+    return render_template('weight_tracker.html', weight_logs=weight_logs, now=now_amsterdam())
 
 @app.route('/weight-tracker/add', methods=['POST'])
 @login_required
@@ -514,8 +520,8 @@ def add_weight_log():
             flash('Invalid date format', 'error')
             return redirect(url_for('weight_tracker'))
     else:
-        # Use current UTC time when no date is provided
-        logged_at = datetime.utcnow()
+        # Use current Amsterdam time when no date is provided
+        logged_at = now_amsterdam()
     
     # Validate weight
     try:
@@ -702,7 +708,7 @@ def add_bloodwork():
     try:
         # Get form data
         test_date_str = request.form.get('test_date')
-        test_date = datetime.strptime(test_date_str, '%Y-%m-%d') if test_date_str else datetime.utcnow()
+        test_date = datetime.strptime(test_date_str, '%Y-%m-%d') if test_date_str else now_amsterdam()
         
         # Create new bloodwork log
         bloodwork = BloodworkLog(
@@ -831,7 +837,7 @@ def export_workout_logs():
     return Response(
         output,
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=workout_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=workout_logs_{now_amsterdam().strftime("%Y%m%d")}.csv'}
     )
 
 @app.route('/export/weight-logs')
@@ -864,7 +870,7 @@ def export_weight_logs():
     return Response(
         output,
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=weight_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=weight_logs_{now_amsterdam().strftime("%Y%m%d")}.csv'}
     )
 
 @app.route('/export/personal-records')
@@ -907,7 +913,7 @@ def export_personal_records():
     return Response(
         output,
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=personal_records_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=personal_records_{now_amsterdam().strftime("%Y%m%d")}.csv'}
     )
 
 @app.route('/export/bloodwork-logs')
@@ -950,7 +956,7 @@ def export_bloodwork_logs():
     return Response(
         output,
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=bloodwork_logs_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=bloodwork_logs_{now_amsterdam().strftime("%Y%m%d")}.csv'}
     )
 
 
