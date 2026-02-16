@@ -26,7 +26,7 @@
 ## Project conventions
 - Input validation is performed inline in route handlers with `flash()` errors and redirects back to the same view (see `add_set` and `add_weight_log` in [app.py](app.py)).
 - Exercise names are normalized to title case before persistence.
-- Use `datetime.utcnow()` for timestamps across models and PR updates.
+- Use `now_amsterdam()` for timestamps across models and app logic. All timestamps are stored as naive datetimes in Amsterdam timezone (Europe/Amsterdam).
 
 ## Integration points
 - Chart rendering is front-end only; server exposes data via JSON at `/weight-tracker/data`.
