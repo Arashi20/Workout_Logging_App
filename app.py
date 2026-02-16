@@ -501,10 +501,6 @@ def prs():
         ex_type = pr.exercise.exercise_type or 'Uncategorized'
         grouped_prs[ex_type].append(pr)
     
-    # Sort PRs within each group by achieved date (newest first)
-    for ex_type in grouped_prs:
-        grouped_prs[ex_type].sort(key=lambda p: p.achieved_at, reverse=True)
-    
     # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
     sorted_groups = []
     for ex_type in EXERCISE_TYPES:
