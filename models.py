@@ -1,15 +1,23 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+import pytz
 
 db = SQLAlchemy()
+
+# Define Amsterdam timezone
+AMSTERDAM_TZ = pytz.timezone('Europe/Amsterdam')
+
+def now_amsterdam():
+    """Get current datetime in Amsterdam timezone as naive datetime for database storage"""
+    return datetime.now(AMSTERDAM_TZ).replace(tzinfo=None)
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
     
     workout_sessions = db.relationship('WorkoutSession', backref='user', lazy=True, cascade='all, delete-orphan')
     prs = db.relationship('PersonalRecord', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -24,7 +32,7 @@ class Exercise(db.Model):
     exercise_type = db.Column(db.String(50))  # e.g., 'Strength', 'Cardio', 'Flexibility'
     is_bodyweight = db.Column(db.Boolean, default=False, nullable=False)
     is_cardio = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
     
     workout_logs = db.relationship('WorkoutLog', backref='exercise', lazy=True)
     prs = db.relationship('PersonalRecord', backref='exercise', lazy=True)
@@ -33,10 +41,10 @@ class WorkoutSession(db.Model):
     __tablename__ = 'workout_sessions'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    start_time = db.Column(db.DateTime, nullable=False, default=now_amsterdam)
     end_time = db.Column(db.DateTime, index=True)
     duration_minutes = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
     
     workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True, cascade='all, delete-orphan')
 
@@ -51,7 +59,7 @@ class WorkoutLog(db.Model):
     calories = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
     time_minutes = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
     set_type = db.Column(db.String(20), default='working')  # 'warmup' or 'working'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
 
 class PersonalRecord(db.Model):
     __tablename__ = 'personal_records'
@@ -60,7 +68,7 @@ class PersonalRecord(db.Model):
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
     weight = db.Column(db.Float, nullable=False)
     reps = db.Column(db.Integer, nullable=False)
-    achieved_at = db.Column(db.DateTime, default=datetime.utcnow)
+    achieved_at = db.Column(db.DateTime, default=now_amsterdam)
     
     __table_args__ = (db.UniqueConstraint('user_id', 'exercise_id', name='unique_user_exercise_pr'),)
 
@@ -72,13 +80,13 @@ class WeightLog(db.Model):
     body_fat_percentage = db.Column(db.Float)
     visceral_fat = db.Column(db.Float)
     notes = db.Column(db.Text)
-    logged_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    logged_at = db.Column(db.DateTime, default=now_amsterdam, index=True)
 
 class BloodworkLog(db.Model):
     __tablename__ = 'bloodwork_logs'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    test_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    test_date = db.Column(db.DateTime, nullable=False, default=now_amsterdam, index=True)
     
     # Priority 1: Gym Bro Essentials
     testosterone_total = db.Column(db.Float)  # ng/dL
@@ -94,7 +102,7 @@ class BloodworkLog(db.Model):
     homa_index = db.Column(db.Float)          # calculated
     
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
     
     # Define reference ranges as class attributes (US-standard units)
     REFERENCE_RANGES = {
