@@ -435,7 +435,7 @@ body {
 .card-workout:hover { border-color: var(--primary-color); }
 .card-prs:hover { border-color: var(--accent-gold); }
 .card-programs:hover { border-color: var(--secondary-color); }
-.card-weight:hover { border-color: var(--success-color); }
+.card-weight:hover { border-color: #3853cf; }
 .card-health:hover { border-color: #ff6b6b; }
 
 .card-icon {
