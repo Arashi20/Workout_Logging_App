@@ -740,12 +740,6 @@ def delete_exercise(exercise_id):
     
     return redirect(url_for('exercises'))
 
-@app.route('/tools/plate-calculator')
-@login_required
-def plate_calculator():
-    """Plate calculator tool for determining what plates to load"""
-    return render_template('plate_calculator.html')
-
 @app.route('/health')
 @login_required
 def health():

@@ -70,66 +70,24 @@ This document summarizes the features that were implemented as demonstrations of
 
 ---
 
-### 3. Plate Calculator Tool ⚖️
-
-**Status:** Fully Implemented  
-**Files Modified:**
-- `app.py` - Added `/tools/plate-calculator` route
-- `templates/plate_calculator.html` - New interactive calculator
-- `templates/landing.html` - Added Tools section with calculator link
-
-**Features:**
-- Calculate what plates to load for any target weight
-- Support for multiple bar types:
-  - Olympic bar (20 kg)
-  - Women's bar (15 kg)
-  - Fixed bar (10 kg)
-  - Custom bar weight
-- Customizable plate selection:
-  - 25, 20, 15, 10, 5, 2.5, 1.25, 0.5 kg plates
-  - Select only the plates available in your gym
-- Real-time calculation with visual feedback
-- Shows plates needed per side
-- Calculates total weight achieved
-- Warns if exact weight cannot be reached
-- Suggests adding smaller plates if needed
-
-**Benefits:**
-- Eliminates mental math in the gym
-- Faster plate loading
-- Reduces errors and wasted time
-- Customizable for home gyms or commercial gyms
-- Educational for beginners
-
-**Technical Details:**
-- Client-side JavaScript for instant results
-- Greedy algorithm for optimal plate selection
-- Handles floating-point precision properly
-- Validates all inputs
-- Smooth scrolling to results
-- Keyboard support (Enter to calculate)
-
----
-
 ## 📊 Statistics and Impact
 
 ### Code Changes
-- **Files Modified:** 5
-- **Files Created:** 3
-- **Lines Added:** ~500+
+- **Files Modified:** 4
+- **Files Created:** 2
+- **Lines Added:** ~400+
 - **Lines Modified:** ~50
 
 ### Features Coverage
 Based on the comprehensive improvement document (SUGGESTED_IMPROVEMENTS.md):
 - **Priority 1 Features:** 2/6 implemented (33%)
-- **Priority 5 Features:** 1/3 implemented (33%)
-- **Quick Wins:** 3/5 suggested features implemented (60%)
+- **Quick Wins:** 2/5 suggested features implemented (40%)
 
 ### Time Investment
 - Analysis and documentation: ~2 hours
-- Feature implementation: ~1.5 hours
+- Feature implementation: ~1 hour
 - Testing and refinement: ~0.5 hours
-- **Total:** ~4 hours
+- **Total:** ~3.5 hours
 
 ---
 
@@ -199,14 +157,6 @@ These implemented features serve as foundations for future improvements:
 - Training volume charts over time
 - Progress indicators (arrows showing improvement)
 
-### Plate Calculator Extensions
-- Save custom plate sets (home gym, gym A, gym B)
-- Support for pounds (lbs) in addition to kg
-- Warmup calculator (percentage-based)
-- 1RM calculator integration
-- Multiple bar loading at once
-- Share configurations with others
-
 ---
 
 ## 📝 Documentation Updates
@@ -217,7 +167,7 @@ These implemented features serve as foundations for future improvements:
 
 ### Updated Files
 - Navigation now includes History link
-- Landing page includes History card and Tools section
+- Landing page includes History card
 - All pages support dark mode
 
 ---
@@ -227,7 +177,6 @@ These implemented features serve as foundations for future improvements:
 ### What Worked Well
 1. **Dark Mode** - Simple CSS variables made theming trivial
 2. **Workout History** - Existing data model supported feature perfectly
-3. **Plate Calculator** - Client-side solution = instant results, no backend needed
 
 ### Lessons Learned
 1. Small, incremental features are easier to implement and test
@@ -248,8 +197,7 @@ These implemented features serve as foundations for future improvements:
 ### Immediate (Next Week)
 1. User testing of implemented features
 2. Gather feedback on dark mode color choices
-3. Add more tools to Tools section (1RM calculator, warmup calculator)
-4. Add date filtering to workout history
+3. Add date filtering to workout history
 
 ### Short-term (Next Month)
 1. Implement exercise detail pages (Priority 1.2 from suggestions)
@@ -277,7 +225,7 @@ User feedback on these features will help prioritize which suggestions from the 
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** February 17, 2026  
-**Implementation Status:** Complete  
+**Implementation Status:** Complete (Plate Calculator removed per user feedback)  
 **Next Review:** After user testing

@@ -36,29 +36,6 @@ Click "History" in the navigation bar or the "Workout History" card on the home 
 
 ---
 
-## ⚖️ Plate Calculator
-
-Calculate what plates to load on a barbell for any target weight.
-
-### Features
-- Support for multiple bar types (Olympic, Women's, Fixed, Custom)
-- Customizable available plates
-- Real-time calculation
-- Visual breakdown of plates per side
-- Total weight verification
-- Warnings for inexact matches
-
-### How to Use
-1. Navigate to Tools → Plate Calculator from the home page
-2. Enter your target weight
-3. Select your bar type
-4. Choose available plates
-5. Click "Calculate"
-
-The tool will show you exactly which plates to load on each side of the bar.
-
----
-
 ## 📊 Comprehensive Improvement Suggestions
 
 See `SUGGESTED_IMPROVEMENTS.md` for a detailed analysis with 70+ suggested improvements across:
@@ -84,16 +61,14 @@ See `IMPLEMENTATION_SUMMARY.md` for details on the implemented features.
 ├── SUGGESTED_IMPROVEMENTS.md     # 70+ improvement suggestions
 ├── IMPLEMENTATION_SUMMARY.md     # Implementation details
 ├── templates/
-│   ├── history.html              # Workout history page
-│   └── plate_calculator.html     # Plate calculator tool
-├── app.py                        # Added history and calculator routes
+│   └── history.html              # Workout history page
+├── app.py                        # Added history route
 ├── static/css/style.css          # Added dark mode styles
 └── templates/base.html           # Added theme toggle
 ```
 
 ### New Routes
 - `/history` - Workout history page
-- `/tools/plate-calculator` - Plate calculator tool
 
 ### CSS Variables
 Dark mode is implemented using CSS custom properties. The theme is controlled via `data-theme` attribute on the `<html>` element.
