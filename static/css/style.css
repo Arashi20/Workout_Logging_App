@@ -687,9 +687,7 @@ body {
 
 /* PRs Page */
 .prs-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    margin-top: 2rem;
 }
 
 .pr-card {
@@ -726,6 +724,23 @@ body {
 .pr-weight {
     color: var(--primary-color);
     font-weight: bold;
+}
+
+.pr-category {
+    margin-bottom: 2rem;
+}
+
+.pr-category h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.pr-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
 }
 
 /* Programs Page */
@@ -1008,7 +1023,7 @@ tr:hover {
         text-align: center;
     }
 
-    .prs-list {
+    .pr-cards-grid {
         grid-template-columns: 1fr;
     }
 

@@ -6,17 +6,24 @@
 <div class="prs-container">
     <h1>Personal Records 🏆</h1>
 
-    {% if prs %}
+    {% if grouped_prs %}
     <div class="prs-list">
-        {% for pr in prs %}
-        <div class="pr-card">
-            <div class="pr-header">
-                <h3>{{ pr.exercise.name }}</h3>
-                <span class="pr-date">{{ pr.achieved_at.strftime('%Y-%m-%d') }}</span>
-            </div>
-            <div class="pr-details">
-                <span class="pr-weight">{{ pr.weight }} kg</span>
-                <span class="pr-reps">× {{ pr.reps }} reps</span>
+        {% for exercise_type, prs in grouped_prs %}
+        <div class="pr-category">
+            <h2>{{ exercise_type }} ({{ prs|length }})</h2>
+            <div class="pr-cards-grid">
+                {% for pr in prs %}
+                <div class="pr-card">
+                    <div class="pr-header">
+                        <h3>{{ pr.exercise.name }}</h3>
+                        <span class="pr-date">{{ pr.achieved_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <div class="pr-details">
+                        <span class="pr-weight">{{ pr.weight }} kg</span>
+                        <span class="pr-reps">× {{ pr.reps }} reps</span>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endfor %}

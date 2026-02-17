@@ -493,7 +493,26 @@ def update_pr(user_id, exercise_id, weight, reps):
 @login_required
 def prs():
     personal_records = PersonalRecord.query.filter_by(user_id=current_user.id).order_by(PersonalRecord.achieved_at.desc()).all()
-    return render_template('prs.html', prs=personal_records)
+    
+    # Group PRs by exercise type
+    grouped_prs = defaultdict(list)
+    
+    for pr in personal_records:
+        ex_type = pr.exercise.exercise_type or 'Uncategorized'
+        grouped_prs[ex_type].append(pr)
+    
+    # Sort the groups to show in the order: Pull, Push, Legs, Core, Cardio, then others
+    sorted_groups = []
+    for ex_type in EXERCISE_TYPES:
+        if ex_type in grouped_prs:
+            sorted_groups.append((ex_type, grouped_prs[ex_type]))
+    
+    # Add any remaining types (Uncategorized or old types)
+    for ex_type, prs_list in grouped_prs.items():
+        if ex_type not in EXERCISE_TYPES:
+            sorted_groups.append((ex_type, prs_list))
+    
+    return render_template('prs.html', grouped_prs=sorted_groups)
 
 @app.route('/weight-tracker')
 @login_required
