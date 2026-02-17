@@ -17,10 +17,14 @@
             {% if current_user.is_authenticated %}
             <div class="nav-links">
                 <a href="{{ url_for('workout') }}" class="nav-link">Workout</a>
+                <a href="{{ url_for('history') }}" class="nav-link">History</a>
                 <a href="{{ url_for('prs') }}" class="nav-link">PRs</a>
                 <a href="{{ url_for('exercises') }}" class="nav-link">Exercises</a>
                 <a href="{{ url_for('weight_tracker') }}" class="nav-link">Weight</a>
                 <a href="{{ url_for('health') }}" class="nav-link">Health</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                    <span id="theme-icon">🌙</span>
+                </button>
                 <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
             </div>
             {% endif %}
@@ -44,6 +48,33 @@
     {% block extra_js %}{% endblock %}
     
     <script>
+        // Dark mode toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const htmlElement = document.documentElement;
+        
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-theme', currentTheme);
+        updateThemeIcon(currentTheme);
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                htmlElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+        }
+        
+        function updateThemeIcon(theme) {
+            if (themeIcon) {
+                themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+        
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

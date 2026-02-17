@@ -514,6 +514,50 @@ def prs():
     
     return render_template('prs.html', grouped_prs=sorted_groups)
 
+@app.route('/history')
+@login_required
+def history():
+    # Get all completed workout sessions for the current user
+    sessions = WorkoutSession.query.filter_by(
+        user_id=current_user.id
+    ).filter(
+        WorkoutSession.end_time.isnot(None)
+    ).order_by(WorkoutSession.start_time.desc()).all()
+    
+    # Calculate statistics for each session
+    session_data = []
+    for session in sessions:
+        logs = session.workout_logs
+        
+        # Calculate total volume (weight x reps for all working sets)
+        total_volume = sum(
+            (log.weight or 0) * (log.reps or 0) 
+            for log in logs 
+            if log.set_type == 'working' and not log.exercise.is_cardio
+        )
+        
+        # Count unique exercises
+        unique_exercises = len(set(log.exercise.name for log in logs))
+        
+        # Count total sets (working sets only)
+        total_sets = sum(1 for log in logs if log.set_type == 'working')
+        
+        # Get exercise breakdown
+        exercise_breakdown = defaultdict(int)
+        for log in logs:
+            if log.set_type == 'working':
+                exercise_breakdown[log.exercise.name] += 1
+        
+        session_data.append({
+            'session': session,
+            'total_volume': round(total_volume, 1),
+            'unique_exercises': unique_exercises,
+            'total_sets': total_sets,
+            'exercise_breakdown': dict(exercise_breakdown)
+        })
+    
+    return render_template('history.html', session_data=session_data)
+
 @app.route('/weight-tracker')
 @login_required
 def weight_tracker():
