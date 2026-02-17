@@ -411,7 +411,7 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
 }
@@ -436,6 +436,7 @@ body {
 .card-prs:hover { border-color: var(--accent-gold); }
 .card-programs:hover { border-color: var(--secondary-color); }
 .card-weight:hover { border-color: var(--success-color); }
+.card-health:hover { border-color: #ff6b6b; }
 
 .card-icon {
     font-size: 3rem;
