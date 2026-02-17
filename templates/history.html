@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Workout History - Workout Logger{% endblock %}
+
+{% block content %}
+<h1>Workout History</h1>
+
+{% if session_data %}
+    <div class="history-stats-summary">
+        <div class="stat-card">
+            <div class="stat-icon">🏋️</div>
+            <div class="stat-content">
+                <h3>Total Workouts</h3>
+                <p class="stat-value">{{ session_data|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="history-list">
+        {% for data in session_data %}
+        <div class="history-card">
+            <div class="history-header">
+                <div class="history-date">
+                    <h3>{{ data.session.start_time.strftime('%B %d, %Y') }}</h3>
+                    <p class="time-detail">{{ data.session.start_time.strftime('%H:%M') }} - {{ data.session.end_time.strftime('%H:%M') }}</p>
+                </div>
+                <div class="history-duration">
+                    <span class="duration-badge">{{ data.session.duration_minutes }} min</span>
+                </div>
+            </div>
+
+            <div class="history-stats">
+                <div class="history-stat-item">
+                    <span class="stat-label">📊 Total Volume</span>
+                    <span class="stat-number">{{ data.total_volume }} kg</span>
+                </div>
+                <div class="history-stat-item">
+                    <span class="stat-label">💪 Exercises</span>
+                    <span class="stat-number">{{ data.unique_exercises }}</span>
+                </div>
+                <div class="history-stat-item">
+                    <span class="stat-label">🔢 Working Sets</span>
+                    <span class="stat-number">{{ data.total_sets }}</span>
+                </div>
+            </div>
+
+            <div class="history-exercises">
+                <h4>Exercises Performed:</h4>
+                <div class="exercise-tags">
+                    {% for exercise_name, set_count in data.exercise_breakdown.items() %}
+                    <span class="exercise-tag">{{ exercise_name }} ({{ set_count }} sets)</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No workout history yet. Complete your first workout to see it here!</p>
+        <a href="{{ url_for('workout') }}" class="btn btn-primary">Start Workout</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-stats-summary {
+    margin-bottom: 2rem;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.history-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: all 0.3s;
+    border-left: 4px solid var(--primary-color);
+}
+
+.history-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.history-date h3 {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    font-size: 1.25rem;
+}
+
+.time-detail {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.duration-badge {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.history-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.history-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.history-exercises h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+}
+
+.exercise-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.exercise-tag {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 16px;
+    font-size: 0.875rem;
+    border: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .history-header {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .history-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-number {
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}

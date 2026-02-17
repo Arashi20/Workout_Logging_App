@@ -28,6 +28,26 @@
     --spacing: 1rem;
 }
 
+/* Dark Mode Theme */
+[data-theme="dark"] {
+    --primary-color: #4a90e2;
+    --primary-dark: #357abd;
+    --secondary-color: #7ea8c9;
+    --success-color: #66bb6a;
+    --warning-color: #ffd54f;
+    --danger-color: #ef5350;
+    --accent-gold: #ffd54f;
+    
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border-color: #333333;
+    
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: var(--bg-color);
@@ -433,6 +453,7 @@ body {
 }
 
 .card-workout:hover { border-color: var(--primary-color); }
+.card-history:hover { border-color: #9c27b0; }
 .card-prs:hover { border-color: var(--accent-gold); }
 .card-programs:hover { border-color: var(--secondary-color); }
 .card-weight:hover { border-color: #3853cf; }
@@ -1135,4 +1156,27 @@ tr:hover {
 #exercise_search:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+/* Dark Mode Toggle */
+.theme-toggle {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background-color: var(--bg-color);
+    transform: rotate(20deg);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
 }
