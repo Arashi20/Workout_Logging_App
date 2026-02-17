@@ -10,7 +10,6 @@ This is a lightweight, mobile-optimized web application built with Flask that he
 
 - **Workout Logging**: Track exercises, sets, reps, and weights in real-time
 - **Personal Records (PRs)**: View all your personal records for each exercise
-- **Workout Programs**: Create and manage custom workout programs (Upper/Lower, PPL, etc.)
 - **Weight Tracker**: Monitor body weight, body fat percentage, and visceral fat with visual graphs
 - **Secure Login**: Password-protected access to your personal data
 - **Mobile-Optimized**: Responsive design that works great on mobile and desktop
