@@ -740,6 +740,131 @@ def delete_exercise(exercise_id):
     
     return redirect(url_for('exercises'))
 
+@app.route('/exercise/<int:exercise_id>')
+@login_required
+def exercise_detail(exercise_id):
+    """Exercise detail page showing performance tracking and analytics"""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    # Get all workout logs for this exercise by current user
+    workout_logs = db.session.query(WorkoutLog, WorkoutSession).join(
+        WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+    ).filter(
+        WorkoutLog.exercise_id == exercise_id,
+        WorkoutSession.user_id == current_user.id,
+        WorkoutLog.set_type == 'working'  # Only count working sets
+    ).order_by(WorkoutSession.start_time).all()
+    
+    # Get current PR for this exercise
+    current_pr = PersonalRecord.query.filter_by(
+        user_id=current_user.id,
+        exercise_id=exercise_id
+    ).first()
+    
+    # Calculate performance metrics
+    performance_data = []
+    volume_data = []
+    best_sets = {
+        '1rm': None,
+        '5rm': None,
+        '10rm': None,
+        'max_volume': None
+    }
+    
+    # Track dates seen to aggregate by session date
+    session_dates = {}
+    
+    for log, session in workout_logs:
+        session_date = session.start_time.strftime('%Y-%m-%d')
+        
+        if log.weight and log.reps:
+            # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
+            estimated_1rm = round(log.weight * (1 + log.reps / 30), 2)
+            volume = round(log.weight * log.reps, 2)
+            
+            # Track best max weight per session date for progression chart
+            if session_date not in session_dates:
+                session_dates[session_date] = {
+                    'max_weight': log.weight,
+                    'total_volume': volume,
+                    'estimated_1rm': estimated_1rm
+                }
+            else:
+                session_dates[session_date]['max_weight'] = max(session_dates[session_date]['max_weight'], log.weight)
+                session_dates[session_date]['total_volume'] += volume
+                session_dates[session_date]['estimated_1rm'] = max(session_dates[session_date]['estimated_1rm'], estimated_1rm)
+            
+            # Track best sets by different criteria
+            if not best_sets['1rm'] or estimated_1rm > best_sets['1rm']['estimated_1rm']:
+                best_sets['1rm'] = {
+                    'weight': log.weight,
+                    'reps': log.reps,
+                    'estimated_1rm': estimated_1rm,
+                    'date': session.start_time
+                }
+            
+            # Best 5-rep set
+            if log.reps >= 5:
+                if not best_sets['5rm'] or log.weight > best_sets['5rm']['weight']:
+                    best_sets['5rm'] = {
+                        'weight': log.weight,
+                        'reps': log.reps,
+                        'date': session.start_time
+                    }
+            
+            # Best 10-rep set
+            if log.reps >= 10:
+                if not best_sets['10rm'] or log.weight > best_sets['10rm']['weight']:
+                    best_sets['10rm'] = {
+                        'weight': log.weight,
+                        'reps': log.reps,
+                        'date': session.start_time
+                    }
+            
+            # Best single-set volume
+            if not best_sets['max_volume'] or volume > best_sets['max_volume']['volume']:
+                best_sets['max_volume'] = {
+                    'weight': log.weight,
+                    'reps': log.reps,
+                    'volume': volume,
+                    'date': session.start_time
+                }
+    
+    # Convert session data to sorted lists for charts
+    sorted_dates = sorted(session_dates.keys())
+    for date in sorted_dates:
+        performance_data.append({
+            'date': date,
+            'weight': session_dates[date]['max_weight'],
+            'estimated_1rm': session_dates[date]['estimated_1rm']
+        })
+        volume_data.append({
+            'date': date,
+            'volume': session_dates[date]['total_volume']
+        })
+    
+    # Calculate total statistics
+    total_sets = len(workout_logs)
+    total_workouts = len(set(log[1].id for log in workout_logs))
+    
+    # Calculate average volume per workout (if applicable)
+    avg_volume_per_workout = None
+    if volume_data:
+        total_volume = sum(v['volume'] for v in volume_data)
+        avg_volume_per_workout = round(total_volume / total_workouts, 2) if total_workouts > 0 else 0
+    
+    return render_template(
+        'exercise_detail.html',
+        exercise=exercise,
+        performance_data=performance_data,
+        volume_data=volume_data,
+        best_sets=best_sets,
+        current_pr=current_pr,
+        total_sets=total_sets,
+        total_workouts=total_workouts,
+        avg_volume_per_workout=avg_volume_per_workout
+    )
+
 @app.route('/health')
 @login_required
 def health():

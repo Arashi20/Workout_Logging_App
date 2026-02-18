@@ -76,7 +76,10 @@
                     {% endif %}
                     <div class="exercise-footer">
                         <span class="exercise-date">Added {{ exercise.created_at.strftime('%Y-%m-%d') }}</span>
-                        <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}" data-delete-url="{{ url_for('delete_exercise', exercise_id=exercise.id) }}">Delete</button>
+                        <div class="exercise-actions">
+                            <a href="{{ url_for('exercise_detail', exercise_id=exercise.id) }}" class="btn btn-primary btn-small">View Details</a>
+                            <button type="button" class="btn btn-danger btn-small delete-exercise-btn" data-exercise-id="{{ exercise.id }}" data-exercise-name="{{ exercise.name }}" data-delete-url="{{ url_for('delete_exercise', exercise_id=exercise.id) }}">Delete</button>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
