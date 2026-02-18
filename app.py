@@ -766,9 +766,7 @@ def exercise_detail(exercise_id):
     volume_data = []
     best_sets = {
         '1rm': None,
-        '5rm': None,
-        '10rm': None,
-        'max_volume': None
+        '10rm': None
     }
     
     # Track dates seen to aggregate by session date
@@ -779,56 +777,38 @@ def exercise_detail(exercise_id):
         
         if log.weight and log.reps:
             # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
-            estimated_1rm = round(log.weight * (1 + log.reps / 30), 2)
-            volume = round(log.weight * log.reps, 2)
+            estimated_1rm = round(log.weight * (1 + log.reps / 30), 1)
+            volume = round(log.weight * log.reps, 1)
             
             # Track best max weight per session date for progression chart
             if session_date not in session_dates:
                 session_dates[session_date] = {
-                    'max_weight': log.weight,
+                    'max_weight': round(log.weight, 1),
                     'total_volume': volume,
                     'estimated_1rm': estimated_1rm
                 }
             else:
-                session_dates[session_date]['max_weight'] = max(session_dates[session_date]['max_weight'], log.weight)
-                session_dates[session_date]['total_volume'] += volume
-                session_dates[session_date]['estimated_1rm'] = max(session_dates[session_date]['estimated_1rm'], estimated_1rm)
+                session_dates[session_date]['max_weight'] = round(max(session_dates[session_date]['max_weight'], log.weight), 1)
+                session_dates[session_date]['total_volume'] = round(session_dates[session_date]['total_volume'] + volume, 1)
+                session_dates[session_date]['estimated_1rm'] = round(max(session_dates[session_date]['estimated_1rm'], estimated_1rm), 1)
             
             # Track best sets by different criteria
             if not best_sets['1rm'] or estimated_1rm > best_sets['1rm']['estimated_1rm']:
                 best_sets['1rm'] = {
-                    'weight': log.weight,
+                    'weight': round(log.weight, 1),
                     'reps': log.reps,
                     'estimated_1rm': estimated_1rm,
                     'date': session.start_time
                 }
             
-            # Best 5-rep set
-            if log.reps >= 5:
-                if not best_sets['5rm'] or log.weight > best_sets['5rm']['weight']:
-                    best_sets['5rm'] = {
-                        'weight': log.weight,
-                        'reps': log.reps,
-                        'date': session.start_time
-                    }
-            
             # Best 10-rep set
             if log.reps >= 10:
                 if not best_sets['10rm'] or log.weight > best_sets['10rm']['weight']:
                     best_sets['10rm'] = {
-                        'weight': log.weight,
+                        'weight': round(log.weight, 1),
                         'reps': log.reps,
                         'date': session.start_time
                     }
-            
-            # Best single-set volume
-            if not best_sets['max_volume'] or volume > best_sets['max_volume']['volume']:
-                best_sets['max_volume'] = {
-                    'weight': log.weight,
-                    'reps': log.reps,
-                    'volume': volume,
-                    'date': session.start_time
-                }
     
     # Convert session data to sorted lists for charts
     sorted_dates = sorted(session_dates.keys())
@@ -847,12 +827,6 @@ def exercise_detail(exercise_id):
     total_sets = len(workout_logs)
     total_workouts = len(set(log[1].id for log in workout_logs))
     
-    # Calculate average volume per workout (if applicable)
-    avg_volume_per_workout = None
-    if volume_data:
-        total_volume = sum(v['volume'] for v in volume_data)
-        avg_volume_per_workout = round(total_volume / total_workouts, 2) if total_workouts > 0 else 0
-    
     return render_template(
         'exercise_detail.html',
         exercise=exercise,
@@ -861,8 +835,7 @@ def exercise_detail(exercise_id):
         best_sets=best_sets,
         current_pr=current_pr,
         total_sets=total_sets,
-        total_workouts=total_workouts,
-        avg_volume_per_workout=avg_volume_per_workout
+        total_workouts=total_workouts
     )
 
 @app.route('/health')

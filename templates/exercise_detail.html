@@ -39,22 +39,16 @@
             <div class="stat-value">{{ total_sets }}</div>
             <div class="stat-label">Total Sets Logged</div>
         </div>
-        {% if avg_volume_per_workout %}
-        <div class="stat-card">
-            <div class="stat-value">{{ avg_volume_per_workout }} kg</div>
-            <div class="stat-label">Avg Volume/Workout</div>
-        </div>
-        {% endif %}
         {% if current_pr %}
         <div class="stat-card pr-card">
-            <div class="stat-value">{{ current_pr.weight }} kg × {{ current_pr.reps }}</div>
+            <div class="stat-value">{{ current_pr.weight|round(1) }} kg × {{ current_pr.reps }}</div>
             <div class="stat-label">Current PR</div>
             <small class="stat-date">{{ current_pr.achieved_at.strftime('%Y-%m-%d') }}</small>
         </div>
         {% endif %}
     </div>
 
-    {% if best_sets['1rm'] or best_sets['5rm'] or best_sets['10rm'] or best_sets['max_volume'] %}
+    {% if best_sets['1rm'] or best_sets['10rm'] %}
     <div class="best-sets-section">
         <h2>Best Sets</h2>
         <div class="best-sets-grid">
@@ -69,17 +63,6 @@
             </div>
             {% endif %}
 
-            {% if best_sets['5rm'] %}
-            <div class="best-set-card">
-                <h3>Best 5+ Rep Set</h3>
-                <div class="best-set-value">{{ best_sets['5rm']['weight'] }} kg</div>
-                <div class="best-set-info">
-                    × {{ best_sets['5rm']['reps'] }} reps
-                </div>
-                <small class="best-set-date">{{ best_sets['5rm']['date'].strftime('%Y-%m-%d') }}</small>
-            </div>
-            {% endif %}
-
             {% if best_sets['10rm'] %}
             <div class="best-set-card">
                 <h3>Best 10+ Rep Set</h3>
@@ -88,17 +71,6 @@
                     × {{ best_sets['10rm']['reps'] }} reps
                 </div>
                 <small class="best-set-date">{{ best_sets['10rm']['date'].strftime('%Y-%m-%d') }}</small>
-            </div>
-            {% endif %}
-
-            {% if best_sets['max_volume'] %}
-            <div class="best-set-card">
-                <h3>Max Single-Set Volume</h3>
-                <div class="best-set-value">{{ best_sets['max_volume']['volume'] }} kg</div>
-                <div class="best-set-info">
-                    {{ best_sets['max_volume']['weight'] }} kg × {{ best_sets['max_volume']['reps'] }} reps
-                </div>
-                <small class="best-set-date">{{ best_sets['max_volume']['date'].strftime('%Y-%m-%d') }}</small>
             </div>
             {% endif %}
         </div>
@@ -170,7 +142,7 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' kg';
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' kg';
                         }
                     }
                 }
@@ -220,7 +192,7 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return 'Volume: ' + context.parsed.y.toFixed(2) + ' kg';
+                            return 'Volume: ' + context.parsed.y.toFixed(1) + ' kg';
                         }
                     }
                 }
