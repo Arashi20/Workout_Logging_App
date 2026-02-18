@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.name }} - Exercise Detail{% endblock %}
+
+{% block content %}
+<div class="exercise-detail-container">
+    <div class="exercise-detail-header">
+        <div>
+            <h1>{{ exercise.name }}</h1>
+            <div class="exercise-badges">
+                {% if exercise.exercise_type %}
+                <span class="exercise-type">{{ exercise.exercise_type }}</span>
+                {% endif %}
+                {% if exercise.is_bodyweight %}
+                <span class="bodyweight-badge">Bodyweight</span>
+                {% endif %}
+                {% if exercise.is_cardio %}
+                <span class="cardio-badge">Cardio</span>
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ url_for('exercises') }}" class="btn btn-secondary">← Back to Exercises</a>
+    </div>
+
+    {% if exercise.description %}
+    <div class="exercise-info-card">
+        <h3>Description</h3>
+        <p>{{ exercise.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_workouts }}</div>
+            <div class="stat-label">Total Workouts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_sets }}</div>
+            <div class="stat-label">Total Sets Logged</div>
+        </div>
+        {% if current_pr %}
+        <div class="stat-card pr-card">
+            <div class="stat-value">{{ current_pr.weight|round(1) }} kg × {{ current_pr.reps }}</div>
+            <div class="stat-label">Current PR</div>
+            <small class="stat-date">{{ current_pr.achieved_at.strftime('%Y-%m-%d') }}</small>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if best_sets['1rm'] or best_sets['10rm'] %}
+    <div class="best-sets-section">
+        <h2>Best Sets</h2>
+        <div class="best-sets-grid">
+            {% if best_sets['1rm'] %}
+            <div class="best-set-card">
+                <h3>Estimated 1RM</h3>
+                <div class="best-set-value">{{ best_sets['1rm']['estimated_1rm'] }} kg</div>
+                <div class="best-set-info">
+                    From {{ best_sets['1rm']['weight'] }} kg × {{ best_sets['1rm']['reps'] }} reps
+                </div>
+                <small class="best-set-date">{{ best_sets['1rm']['date'].strftime('%Y-%m-%d') }}</small>
+            </div>
+            {% endif %}
+
+            {% if best_sets['10rm'] %}
+            <div class="best-set-card">
+                <h3>Best 10+ Rep Set</h3>
+                <div class="best-set-value">{{ best_sets['10rm']['weight'] }} kg</div>
+                <div class="best-set-info">
+                    × {{ best_sets['10rm']['reps'] }} reps
+                </div>
+                <small class="best-set-date">{{ best_sets['10rm']['date'].strftime('%Y-%m-%d') }}</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if performance_data %}
+    <!-- Weight Progression Chart -->
+    <div class="chart-section">
+        <h2>Weight Progression</h2>
+        <canvas id="weightProgressionChart"></canvas>
+    </div>
+
+    <!-- Volume Progression Chart -->
+    <div class="chart-section">
+        <h2>Volume Progression</h2>
+        <canvas id="volumeProgressionChart"></canvas>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No workout data yet for this exercise. Start logging workouts to see performance analytics!</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if performance_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    // Weight Progression Chart
+    const weightCtx = document.getElementById('weightProgressionChart').getContext('2d');
+    const weightData = {{ performance_data | tojson }};
+    
+    new Chart(weightCtx, {
+        type: 'line',
+        data: {
+            labels: weightData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Max Weight (kg)',
+                    data: weightData.map(d => d.weight),
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Estimated 1RM (kg)',
+                    data: weightData.map(d => d.estimated_1rm),
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' kg';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Weight (kg)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Volume Progression Chart
+    const volumeCtx = document.getElementById('volumeProgressionChart').getContext('2d');
+    const volumeData = {{ volume_data | tojson }};
+    
+    new Chart(volumeCtx, {
+        type: 'bar',
+        data: {
+            labels: volumeData.map(d => d.date),
+            datasets: [{
+                label: 'Total Volume (kg)',
+                data: volumeData.map(d => d.volume),
+                backgroundColor: '#FF9800',
+                borderColor: '#F57C00',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Volume: ' + context.parsed.y.toFixed(1) + ' kg';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Volume (kg)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
