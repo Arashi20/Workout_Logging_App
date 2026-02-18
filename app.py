@@ -517,12 +517,47 @@ def prs():
 @app.route('/history')
 @login_required
 def history():
-    # Get all completed workout sessions for the current user
-    sessions = WorkoutSession.query.filter_by(
+    # Get filter parameter
+    filter_date = request.args.get('date', None)
+    show_all = request.args.get('show_all', 'false').lower() == 'true'
+    
+    # Base query for completed workout sessions
+    base_query = WorkoutSession.query.filter_by(
         user_id=current_user.id
     ).filter(
         WorkoutSession.end_time.isnot(None)
-    ).order_by(WorkoutSession.start_time.desc()).all()
+    )
+    
+    # Get all sessions for date filter list
+    all_sessions = base_query.order_by(WorkoutSession.start_time.desc()).all()
+    
+    # Extract unique dates for filter
+    available_dates = []
+    seen_dates = set()
+    for session in all_sessions:
+        date_str = session.start_time.strftime('%Y-%m-%d')
+        if date_str not in seen_dates:
+            available_dates.append({
+                'date': date_str,
+                'display': session.start_time.strftime('%B %d, %Y')
+            })
+            seen_dates.add(date_str)
+    
+    # Filter sessions based on parameters
+    if filter_date:
+        # Filter by specific date
+        try:
+            filter_datetime = datetime.strptime(filter_date, '%Y-%m-%d')
+            sessions = [s for s in all_sessions if s.start_time.date() == filter_datetime.date()]
+        except ValueError:
+            flash('Invalid date format', 'error')
+            sessions = all_sessions[:5]
+    elif show_all:
+        # Show all sessions
+        sessions = all_sessions
+    else:
+        # Default: show last 5 sessions
+        sessions = all_sessions[:5]
     
     # Calculate statistics for each session
     session_data = []
@@ -556,7 +591,13 @@ def history():
             'exercise_breakdown': dict(exercise_breakdown)
         })
     
-    return render_template('history.html', session_data=session_data)
+    return render_template('history.html', 
+                          session_data=session_data,
+                          available_dates=available_dates,
+                          total_workouts=len(all_sessions),
+                          showing_count=len(sessions),
+                          filter_date=filter_date,
+                          show_all=show_all)
 
 @app.route('/weight-tracker')
 @login_required

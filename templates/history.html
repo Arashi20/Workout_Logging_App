@@ -5,16 +5,62 @@
 {% block content %}
 <h1>Workout History</h1>
 
-{% if session_data %}
+{% if total_workouts > 0 %}
     <div class="history-stats-summary">
         <div class="stat-card">
             <div class="stat-icon">🏋️</div>
             <div class="stat-content">
                 <h3>Total Workouts</h3>
-                <p class="stat-value">{{ session_data|length }}</p>
+                <p class="stat-value">{{ total_workouts }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👁️</div>
+            <div class="stat-content">
+                <h3>Currently Showing</h3>
+                <p class="stat-value">{{ showing_count }}</p>
             </div>
         </div>
     </div>
+
+    <!-- Date Filter Section -->
+    <div class="filter-section">
+        <h3>📅 Filter by Date</h3>
+        <div class="filter-buttons">
+            {% if filter_date or show_all %}
+            <a href="{{ url_for('history') }}" class="filter-btn">Show Last 5</a>
+            {% else %}
+            <span class="filter-btn filter-btn-active">Showing Last 5</span>
+            {% endif %}
+            
+            {% if not show_all %}
+            <a href="{{ url_for('history', show_all='true') }}" class="filter-btn">Show All ({{ total_workouts }})</a>
+            {% else %}
+            <span class="filter-btn filter-btn-active">Showing All ({{ total_workouts }})</span>
+            {% endif %}
+        </div>
+        
+        {% if available_dates|length > 0 %}
+        <div class="date-filter-group">
+            <h4>Select Specific Date:</h4>
+            <div class="date-buttons">
+                {% for date_info in available_dates[:10] %}
+                    {% if filter_date == date_info.date %}
+                    <span class="date-btn date-btn-active">{{ date_info.display }}</span>
+                    {% else %}
+                    <a href="{{ url_for('history', date=date_info.date) }}" class="date-btn">{{ date_info.display }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if available_dates|length > 10 %}
+                <span class="date-note">+ {{ available_dates|length - 10 }} more dates (use "Show All" to see)</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if session_data %}
 
     <div class="history-list">
         {% for data in session_data %}
@@ -67,6 +113,104 @@
 <style>
 .history-stats-summary {
     margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.filter-section {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.filter-section h3 {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+}
+
+.filter-section h4 {
+    color: var(--text-secondary);
+    margin: 1.5rem 0 0.75rem 0;
+    font-size: 1rem;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.filter-btn {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 2px solid var(--border-color);
+    font-weight: 500;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.filter-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.filter-btn-active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    cursor: default;
+}
+
+.date-filter-group {
+    margin-top: 1rem;
+}
+
+.date-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.date-btn {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.date-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.date-btn-active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.date-note {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 0.5rem;
 }
 
 .history-list {
@@ -177,6 +321,17 @@
 
     .stat-number {
         font-size: 1.25rem;
+    }
+    
+    .filter-buttons,
+    .date-buttons {
+        flex-direction: column;
+    }
+    
+    .filter-btn,
+    .date-btn {
+        width: 100%;
+        text-align: center;
     }
 }
 </style>
