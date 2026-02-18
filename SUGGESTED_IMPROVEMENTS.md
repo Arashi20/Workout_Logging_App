@@ -653,8 +653,8 @@ This document presents a comprehensive analysis of the Workout Logging App and s
 Based on the current state of the application, I recommend starting with these features that provide the highest impact with reasonable effort:
 
 ### Immediate (This Week)
-1. **Workout History Page** - Users need better visibility into past workouts
-2. **Dark Mode** - Quick win for UX improvement
+1. **Workout History Page** - Users need better visibility into past workouts (DONE)
+2. **Dark Mode** - Quick win for UX improvement (DONE)
 3. **Enhanced Dashboard** - Leverage existing statistics
 
 ### Next Month
