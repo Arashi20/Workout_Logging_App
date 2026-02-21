@@ -1229,8 +1229,6 @@ tr:hover {
     box-shadow: var(--shadow);
     text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
-    min-width: 0;
-    overflow: hidden;
 }
 
 .stat-card:hover {
@@ -1248,8 +1246,6 @@ tr:hover {
     font-weight: bold;
     color: var(--primary-color);
     margin-bottom: 0.5rem;
-    overflow-wrap: break-word;
-    word-break: break-word;
 }
 
 .stat-label {
@@ -1352,10 +1348,6 @@ tr:hover {
     
     .stats-grid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .stat-value {
-        font-size: 1.5rem;
     }
     
     .best-sets-grid {
