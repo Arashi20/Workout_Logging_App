@@ -389,61 +389,62 @@
 function generateWorkoutImage(data) {
     return new Promise(function(resolve) {
         var canvas = document.createElement('canvas');
-        canvas.width = 1080;
-        canvas.height = 1080;
+        var W = 1080, H = 1350;
+        canvas.width = W;
+        canvas.height = H;
         var ctx = canvas.getContext('2d');
-
-        // Background gradient
-        var grad = ctx.createLinearGradient(0, 0, 0, 1080);
-        grad.addColorStop(0, '#1a252f');
-        grad.addColorStop(1, '#2c3e50');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 1080, 1080);
-
-        // Gold accent lines top/bottom
-        ctx.fillStyle = '#d4af37';
-        ctx.fillRect(0, 0, 1080, 8);
-        ctx.fillRect(0, 1072, 1080, 8);
 
         function drawContent(logoImg) {
             ctx.textAlign = 'center';
-            var y = 70;
 
-            // Logo
+            // Clean white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, W, H);
+
+            // Large logo as hero background image (top section)
+            var logoSize = 520;
+            var logoX = (W - logoSize) / 2;
+            var logoY = 50;
             if (logoImg) {
-                var logoSize = 130;
-                ctx.drawImage(logoImg, (1080 - logoSize) / 2, y, logoSize, logoSize);
-                y += logoSize + 30;
+                ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+                // Soft fade from logo into white below
+                var fade = ctx.createLinearGradient(0, logoY + logoSize - 140, 0, logoY + logoSize + 20);
+                fade.addColorStop(0, 'rgba(255,255,255,0)');
+                fade.addColorStop(1, 'rgba(255,255,255,1)');
+                ctx.fillStyle = fade;
+                ctx.fillRect(0, logoY + logoSize - 140, W, 160);
             }
 
-            // AMStrength brand name
-            ctx.fillStyle = '#d4af37';
-            ctx.font = 'bold 54px Arial, sans-serif';
-            ctx.fillText('AMStrength', 540, y);
-            y += 60;
+            var y = logoY + logoSize + 40;
+
+            // Brand name
+            ctx.fillStyle = '#0d1b2a';
+            ctx.font = 'bold 68px Arial, sans-serif';
+            ctx.fillText('AMStrength', W / 2, y);
+            y += 56;
 
             // Subtitle
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 32px Arial, sans-serif';
-            ctx.fillText('WORKOUT COMPLETE', 540, y);
-            y += 50;
+            ctx.fillStyle = '#A0AEC0';
+            ctx.font = 'bold 26px Arial, sans-serif';
+            ctx.fillText('W O R K O U T   C O M P L E T E', W / 2, y);
+            y += 54;
 
-            // Separator
-            ctx.fillStyle = '#d4af37';
-            ctx.fillRect(80, y, 920, 3);
-            y += 36;
+            // Thin divider
+            ctx.fillStyle = '#E2E8F0';
+            ctx.fillRect(140, y, W - 280, 1);
+            y += 40;
 
             // Date
-            ctx.fillStyle = '#b0c4de';
+            ctx.fillStyle = '#0d1b2a';
             ctx.font = '34px Arial, sans-serif';
-            ctx.fillText(data.date, 540, y);
+            ctx.fillText(data.date, W / 2, y);
             y += 46;
 
             // Time range + duration
-            ctx.fillStyle = '#7a9bb5';
-            ctx.font = '28px Arial, sans-serif';
-            ctx.fillText(data.timeRange + '  ·  ' + data.duration + ' min', 540, y);
-            y += 70;
+            ctx.fillStyle = '#A0AEC0';
+            ctx.font = '26px Arial, sans-serif';
+            ctx.fillText(data.timeRange + '   ·   ' + data.duration + ' min', W / 2, y);
+            y += 64;
 
             // Stats row
             var stats = [
@@ -451,46 +452,47 @@ function generateWorkoutImage(data) {
                 { label: 'WORKING SETS', value: String(data.sets) },
                 { label: 'VOLUME', value: data.volume + ' kg' }
             ];
-            var colW = 1080 / 3;
+            var colW = W / 3;
             stats.forEach(function(s, i) {
                 var cx = colW * i + colW / 2;
-                ctx.fillStyle = '#d4af37';
-                ctx.font = 'bold 58px Arial, sans-serif';
+                ctx.fillStyle = '#0d1b2a';
+                ctx.font = 'bold 60px Arial, sans-serif';
                 ctx.fillText(s.value, cx, y);
-                ctx.fillStyle = '#7a9bb5';
-                ctx.font = '22px Arial, sans-serif';
+                ctx.fillStyle = '#A0AEC0';
+                ctx.font = 'bold 19px Arial, sans-serif';
                 ctx.fillText(s.label, cx, y + 36);
             });
-            y += 120;
+            y += 106;
 
-            // Separator
-            ctx.fillStyle = '#3d5166';
-            ctx.fillRect(80, y, 920, 2);
-            y += 40;
+            // Thin divider
+            ctx.fillStyle = '#E2E8F0';
+            ctx.fillRect(140, y, W - 280, 1);
+            y += 46;
 
             // Exercise list header
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Arial, sans-serif';
-            ctx.fillText('EXERCISES', 540, y);
-            y += 44;
+            ctx.fillStyle = '#4A5568';
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillText('E X E R C I S E S', W / 2, y);
+            y += 48;
 
             // Exercises (max 7)
-            ctx.font = '26px Arial, sans-serif';
             var shown = data.exerciseList.slice(0, 7);
             shown.forEach(function(ex) {
-                ctx.fillStyle = '#b0c4de';
-                ctx.fillText(ex, 540, y);
-                y += 40;
+                ctx.fillStyle = '#0d1b2a';
+                ctx.font = '28px Arial, sans-serif';
+                ctx.fillText(ex, W / 2, y);
+                y += 44;
             });
             if (data.exerciseList.length > 7) {
-                ctx.fillStyle = '#7a9bb5';
-                ctx.fillText('+ ' + (data.exerciseList.length - 7) + ' more', 540, y);
+                ctx.fillStyle = '#A0AEC0';
+                ctx.font = '24px Arial, sans-serif';
+                ctx.fillText('+ ' + (data.exerciseList.length - 7) + ' more', W / 2, y);
             }
 
             // Footer
-            ctx.fillStyle = '#546e7a';
-            ctx.font = '22px Arial, sans-serif';
-            ctx.fillText('AMStrength Workout Logger', 540, 1040);
+            ctx.fillStyle = '#CBD5E0';
+            ctx.font = '20px Arial, sans-serif';
+            ctx.fillText('AMStrength Workout Logger', W / 2, H - 44);
 
             canvas.toBlob(resolve, 'image/png');
         }
@@ -498,7 +500,7 @@ function generateWorkoutImage(data) {
         var logo = new Image();
         logo.onload = function() { drawContent(logo); };
         logo.onerror = function() { console.error('Failed to load AMStrength logo for share image'); drawContent(null); };
-        logo.src = '/static/AMS_favicon.png';
+        logo.src = '/static/icon-512x512.png';
     });
 }
 
