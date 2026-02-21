@@ -64,22 +64,14 @@
 
     <div class="history-list">
         {% for data in session_data %}
-        <div class="history-card"
-             data-date="{{ data.session.start_time.strftime('%B %d, %Y') }}"
-             data-time-range="{{ data.session.start_time.strftime('%H:%M') }} - {{ data.session.end_time.strftime('%H:%M') }}"
-             data-duration="{{ data.session.duration_minutes }}"
-             data-volume="{{ data.total_volume }}"
-             data-exercises="{{ data.unique_exercises }}"
-             data-sets="{{ data.total_sets }}"
-             data-exercise-list='{{ data.exercise_breakdown | tojson }}'>
+        <div class="history-card">
             <div class="history-header">
                 <div class="history-date">
                     <h3>{{ data.session.start_time.strftime('%B %d, %Y') }}</h3>
                     <p class="time-detail">{{ data.session.start_time.strftime('%H:%M') }} - {{ data.session.end_time.strftime('%H:%M') }}</p>
                 </div>
-                <div class="history-header-right">
+                <div class="history-duration">
                     <span class="duration-badge">{{ data.session.duration_minutes }} min</span>
-                    <button class="share-btn" onclick="shareWorkout(this)" aria-label="Share workout summary">📤 Share</button>
                 </div>
             </div>
 
@@ -250,38 +242,6 @@
     border-bottom: 2px solid var(--border-color);
 }
 
-.history-header-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-}
-
-.share-btn {
-    background: none;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    padding: 0.4rem 0.9rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.share-btn:hover {
-    background-color: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-}
-
-.share-btn:disabled {
-    opacity: 0.7;
-    cursor: default;
-    transform: none;
-}
-
 .history-date h3 {
     color: var(--text-primary);
     margin: 0 0 0.25rem 0;
@@ -355,13 +315,6 @@
         gap: 0.75rem;
     }
 
-    .history-header-right {
-        flex-direction: row;
-        align-items: center;
-        width: 100%;
-        justify-content: space-between;
-    }
-
     .history-stats {
         grid-template-columns: 1fr;
     }
@@ -382,212 +335,4 @@
     }
 }
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function generateWorkoutImage(data) {
-    return new Promise(function(resolve) {
-        var canvas = document.createElement('canvas');
-        canvas.width = 1080;
-        canvas.height = 1080;
-        var ctx = canvas.getContext('2d');
-
-        // Background gradient
-        var grad = ctx.createLinearGradient(0, 0, 0, 1080);
-        grad.addColorStop(0, '#1a252f');
-        grad.addColorStop(1, '#2c3e50');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 1080, 1080);
-
-        // Gold accent lines top/bottom
-        ctx.fillStyle = '#d4af37';
-        ctx.fillRect(0, 0, 1080, 8);
-        ctx.fillRect(0, 1072, 1080, 8);
-
-        function drawContent(logoImg) {
-            ctx.textAlign = 'center';
-            var y = 70;
-
-            // Logo
-            if (logoImg) {
-                var logoSize = 130;
-                ctx.drawImage(logoImg, (1080 - logoSize) / 2, y, logoSize, logoSize);
-                y += logoSize + 30;
-            }
-
-            // AMStrength brand name
-            ctx.fillStyle = '#d4af37';
-            ctx.font = 'bold 54px Arial, sans-serif';
-            ctx.fillText('AMStrength', 540, y);
-            y += 60;
-
-            // Subtitle
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 32px Arial, sans-serif';
-            ctx.fillText('WORKOUT COMPLETE', 540, y);
-            y += 50;
-
-            // Separator
-            ctx.fillStyle = '#d4af37';
-            ctx.fillRect(80, y, 920, 3);
-            y += 36;
-
-            // Date
-            ctx.fillStyle = '#b0c4de';
-            ctx.font = '34px Arial, sans-serif';
-            ctx.fillText(data.date, 540, y);
-            y += 46;
-
-            // Time range + duration
-            ctx.fillStyle = '#7a9bb5';
-            ctx.font = '28px Arial, sans-serif';
-            ctx.fillText(data.timeRange + '  ·  ' + data.duration + ' min', 540, y);
-            y += 70;
-
-            // Stats row
-            var stats = [
-                { label: 'EXERCISES', value: String(data.exercises) },
-                { label: 'WORKING SETS', value: String(data.sets) },
-                { label: 'VOLUME', value: data.volume + ' kg' }
-            ];
-            var colW = 1080 / 3;
-            stats.forEach(function(s, i) {
-                var cx = colW * i + colW / 2;
-                ctx.fillStyle = '#d4af37';
-                ctx.font = 'bold 58px Arial, sans-serif';
-                ctx.fillText(s.value, cx, y);
-                ctx.fillStyle = '#7a9bb5';
-                ctx.font = '22px Arial, sans-serif';
-                ctx.fillText(s.label, cx, y + 36);
-            });
-            y += 120;
-
-            // Separator
-            ctx.fillStyle = '#3d5166';
-            ctx.fillRect(80, y, 920, 2);
-            y += 40;
-
-            // Exercise list header
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Arial, sans-serif';
-            ctx.fillText('EXERCISES', 540, y);
-            y += 44;
-
-            // Exercises (max 7)
-            ctx.font = '26px Arial, sans-serif';
-            var shown = data.exerciseList.slice(0, 7);
-            shown.forEach(function(ex) {
-                ctx.fillStyle = '#b0c4de';
-                ctx.fillText(ex, 540, y);
-                y += 40;
-            });
-            if (data.exerciseList.length > 7) {
-                ctx.fillStyle = '#7a9bb5';
-                ctx.fillText('+ ' + (data.exerciseList.length - 7) + ' more', 540, y);
-            }
-
-            // Footer
-            ctx.fillStyle = '#546e7a';
-            ctx.font = '22px Arial, sans-serif';
-            ctx.fillText('AMStrength Workout Logger', 540, 1040);
-
-            canvas.toBlob(resolve, 'image/png');
-        }
-
-        var logo = new Image();
-        logo.onload = function() { drawContent(logo); };
-        logo.onerror = function() { console.error('Failed to load AMStrength logo for share image'); drawContent(null); };
-        logo.src = '/static/AMS_favicon.png';
-    });
-}
-
-function copyToClipboard(text, btn) {
-    var origText = btn.innerHTML;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function() {
-            btn.innerHTML = '✅ Copied!';
-            btn.disabled = true;
-            setTimeout(function() { btn.innerHTML = origText; btn.disabled = false; }, 2500);
-        }).catch(function() {
-            btn.innerHTML = origText;
-            alert('Could not copy to clipboard. Please copy manually.');
-        });
-    } else {
-        var ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-            document.execCommand('copy');
-            btn.innerHTML = '✅ Copied!';
-            btn.disabled = true;
-            setTimeout(function() { btn.innerHTML = origText; btn.disabled = false; }, 2500);
-        } catch(e) {
-            alert('Could not copy to clipboard. Please copy manually.');
-        }
-        document.body.removeChild(ta);
-    }
-}
-
-async function shareWorkout(btn) {
-    var card = btn.closest('.history-card');
-    var date = card.dataset.date;
-    var timeRange = card.dataset.timeRange;
-    var duration = card.dataset.duration;
-    var volume = card.dataset.volume;
-    var exercises = card.dataset.exercises;
-    var sets = card.dataset.sets;
-    var exerciseBreakdown = JSON.parse(card.dataset.exerciseList);
-    var exerciseList = Object.entries(exerciseBreakdown).map(function(e) {
-        return e[0] + ' (' + e[1] + ' set' + (e[1] !== 1 ? 's' : '') + ')';
-    });
-
-    var text = '💪 Workout Complete!\n\n'
-        + '📅 ' + date + '\n'
-        + '⏱️ ' + timeRange + '  (' + duration + ' min)\n\n'
-        + '📊 Stats:\n'
-        + '• ' + exercises + ' Exercise' + (parseInt(exercises, 10) !== 1 ? 's' : '') + '\n'
-        + '• ' + sets + ' Working Set' + (parseInt(sets, 10) !== 1 ? 's' : '') + '\n'
-        + '• ' + volume + ' kg Total Volume\n\n'
-        + '🏋️ Exercises:\n'
-        + exerciseList.map(function(e) { return '• ' + e; }).join('\n')
-        + '\n\n#AMStrength #Fitness #Workout';
-
-    var origText = btn.innerHTML;
-
-    if (navigator.share) {
-        btn.innerHTML = '⏳ Preparing…';
-        btn.disabled = true;
-        try {
-            var blob = await generateWorkoutImage({
-                date: date, timeRange: timeRange, duration: duration,
-                volume: volume, exercises: exercises, sets: sets,
-                exerciseList: exerciseList
-            });
-            var file = new File([blob], 'amstrength-workout.png', { type: 'image/png' });
-            var shareData = { title: 'AMStrength Workout', text: text };
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                shareData.files = [file];
-            }
-            await navigator.share(shareData);
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                try {
-                    await navigator.share({ title: 'AMStrength Workout', text: text });
-                } catch (e2) {
-                    if (e2.name !== 'AbortError') { copyToClipboard(text, btn); }
-                }
-            }
-        } finally {
-            btn.innerHTML = origText;
-            btn.disabled = false;
-        }
-    } else {
-        copyToClipboard(text, btn);
-    }
-}
-</script>
 {% endblock %}
