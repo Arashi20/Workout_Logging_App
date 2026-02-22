@@ -571,6 +571,7 @@ body {
 .stat-content {
     flex: 1;
     text-align: left;
+    min-width: 0;
 }
 
 .stat-content h3 {
@@ -587,6 +588,8 @@ body {
     font-weight: bold;
     color: var(--primary-color);
     margin-bottom: 0.25rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .stat-detail {
@@ -1076,6 +1079,22 @@ tr:hover {
         align-items: flex-start;
         gap: 0.5rem;
     }
+
+    .stats-section {
+        padding: 1.25rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1215,14 +1234,14 @@ tr:hover {
     margin-bottom: 0.75rem;
 }
 
-.stats-grid {
+.exercise-detail-container .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
-.stat-card {
+.exercise-detail-container .stat-card {
     background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: var(--border-radius);
@@ -1231,17 +1250,17 @@ tr:hover {
     transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.stat-card:hover {
+.exercise-detail-container .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
 }
 
-.stat-card.pr-card {
+.exercise-detail-container .stat-card.pr-card {
     border: 2px solid var(--accent-gold);
     background: linear-gradient(135deg, var(--card-bg) 0%, rgba(212, 175, 55, 0.05) 100%);
 }
 
-.stat-value {
+.exercise-detail-container .stat-value {
     font-size: 2rem;
     font-weight: bold;
     color: var(--primary-color);
@@ -1346,7 +1365,7 @@ tr:hover {
         flex-direction: column;
     }
     
-    .stats-grid {
+    .exercise-detail-container .stats-grid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
     
