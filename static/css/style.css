@@ -1386,9 +1386,7 @@ tr:hover {
 /* ===== Plateau Detection ===== */
 
 /* Landing page card */
-.card-insights {
-    border-top: 4px solid #9c27b0;
-}
+.card-insights:hover { border-color: #62670e; }
 
 /* Plateaus page container */
 .plateaus-container {

@@ -7,7 +7,7 @@
     <div class="plateaus-header">
         <div>
             <h1>Plateau Detection 📈</h1>
-            <p class="plateaus-subtitle">Analyzing your last 6 sessions per exercise to detect strength and volume trends</p>
+            <p class="plateaus-subtitle">Analyzing up to your last 6 sessions per exercise to detect strength and volume trends</p>
         </div>
         <a href="{{ url_for('exercises') }}" class="btn btn-secondary">← Exercises</a>
     </div>
@@ -49,11 +49,11 @@
     <div class="plateau-info-box">
         <h3>ℹ️ How Plateau Detection Works</h3>
         <p>
-            For each exercise, the last 6 sessions are split into an <strong>early half</strong> and a <strong>recent half</strong>.
+            For each exercise, up to the last 6 sessions are split into an <strong>early half</strong> and a <strong>recent half</strong>.
             Both your estimated <strong>1RM (strength)</strong> and <strong>session volume</strong> are compared across the two halves.
             If neither metric improved by more than 2.5%, the exercise is flagged as a <strong>plateau</strong>.
             If only one metric stagnated it is flagged as <strong>stagnating</strong>.
-            At least 4 logged sessions are required per exercise.
+            At least 4 logged sessions are required per exercise (but more sessions = better analysis).
         </p>
     </div>
 
