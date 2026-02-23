@@ -47,6 +47,46 @@
         {% endif %}
     </div>
 
+    <!-- Plateau Detection Card -->
+    {% if plateau_info.status != 'insufficient_data' %}
+    <div class="plateau-detail-card plateau-detail-{{ plateau_info.status }}">
+        <div class="plateau-detail-header">
+            <h3>
+                {% if plateau_info.status == 'plateau' %}🔴 Plateau Detected
+                {% elif plateau_info.status == 'stagnating' %}🟡 Stagnating
+                {% else %}🟢 Progressing
+                {% endif %}
+            </h3>
+            <a href="{{ url_for('plateaus') }}" class="btn btn-sm btn-secondary">View All Plateaus</a>
+        </div>
+        <div class="plateau-detail-metrics">
+            <div class="plateau-detail-metric">
+                <span class="pdm-label">Strength (1RM)</span>
+                <span class="pdm-values">{{ plateau_info.early_max_1rm }} kg → {{ plateau_info.recent_max_1rm }} kg</span>
+                <span class="pdm-change {% if plateau_info.strength_improvement_pct >= 2.5 %}change-positive{% elif plateau_info.strength_improvement_pct < 0 %}change-negative{% else %}change-neutral{% endif %}">
+                    {% if plateau_info.strength_improvement_pct >= 0 %}+{% endif %}{{ plateau_info.strength_improvement_pct }}%
+                </span>
+            </div>
+            <div class="plateau-detail-metric">
+                <span class="pdm-label">Volume (avg per session)</span>
+                <span class="pdm-values">{{ plateau_info.early_avg_volume }} kg → {{ plateau_info.recent_avg_volume }} kg</span>
+                <span class="pdm-change {% if plateau_info.volume_improvement_pct >= 2.5 %}change-positive{% elif plateau_info.volume_improvement_pct < 0 %}change-negative{% else %}change-neutral{% endif %}">
+                    {% if plateau_info.volume_improvement_pct >= 0 %}+{% endif %}{{ plateau_info.volume_improvement_pct }}%
+                </span>
+            </div>
+        </div>
+        <p class="plateau-detail-suggestion">
+            {% if plateau_info.status == 'plateau' %}
+                💡 Try changing the rep range, adding load, or deloading for a week.
+            {% elif plateau_info.status == 'stagnating' %}
+                💡 Small tweak needed — adjust load, reps, or rest time to break through.
+            {% else %}
+                ✅ Your {{ plateau_info.sessions_analyzed }} most recent sessions show clear progression. Keep it up!
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
     {% if best_sets['1rm'] or best_sets['10rm'] %}
     <div class="best-sets-section">
         <h2>Best Sets</h2>

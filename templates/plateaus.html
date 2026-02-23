@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Plateau Detection - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="plateaus-container">
+    <div class="plateaus-header">
+        <div>
+            <h1>Plateau Detection 📈</h1>
+            <p class="plateaus-subtitle">Analyzing your last 6 sessions per exercise to detect strength and volume trends</p>
+        </div>
+        <a href="{{ url_for('exercises') }}" class="btn btn-secondary">← Exercises</a>
+    </div>
+
+    {% if exercise_analyses %}
+    <!-- Summary Bar -->
+    <div class="plateau-summary">
+        {% if counts.plateau > 0 %}
+        <div class="summary-badge badge-plateau">
+            <span class="badge-icon">🔴</span>
+            <span class="badge-count">{{ counts.plateau }}</span>
+            <span class="badge-label">Plateau{{ 's' if counts.plateau != 1 }}</span>
+        </div>
+        {% endif %}
+        {% if counts.stagnating > 0 %}
+        <div class="summary-badge badge-stagnating">
+            <span class="badge-icon">🟡</span>
+            <span class="badge-count">{{ counts.stagnating }}</span>
+            <span class="badge-label">Stagnating</span>
+        </div>
+        {% endif %}
+        {% if counts.progressing > 0 %}
+        <div class="summary-badge badge-progressing">
+            <span class="badge-icon">🟢</span>
+            <span class="badge-count">{{ counts.progressing }}</span>
+            <span class="badge-label">Progressing</span>
+        </div>
+        {% endif %}
+        {% if counts.insufficient_data > 0 %}
+        <div class="summary-badge badge-insufficient">
+            <span class="badge-icon">⚪</span>
+            <span class="badge-count">{{ counts.insufficient_data }}</span>
+            <span class="badge-label">Need more data</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- How it works info box -->
+    <div class="plateau-info-box">
+        <h3>ℹ️ How Plateau Detection Works</h3>
+        <p>
+            For each exercise, the last 6 sessions are split into an <strong>early half</strong> and a <strong>recent half</strong>.
+            Both your estimated <strong>1RM (strength)</strong> and <strong>session volume</strong> are compared across the two halves.
+            If neither metric improved by more than 2.5%, the exercise is flagged as a <strong>plateau</strong>.
+            If only one metric stagnated it is flagged as <strong>stagnating</strong>.
+            At least 4 logged sessions are required per exercise.
+        </p>
+    </div>
+
+    <!-- Exercise Cards -->
+    <div class="plateau-cards-grid">
+        {% for analysis in exercise_analyses %}
+        <div class="plateau-card plateau-card-{{ analysis.status }}">
+            <div class="plateau-card-header">
+                <a href="{{ url_for('exercise_detail', exercise_id=analysis.exercise.id) }}" class="plateau-exercise-name">
+                    {{ analysis.exercise.name }}
+                </a>
+                <div class="plateau-status-badge status-{{ analysis.status }}">
+                    {% if analysis.status == 'plateau' %}🔴 Plateau
+                    {% elif analysis.status == 'stagnating' %}🟡 Stagnating
+                    {% elif analysis.status == 'progressing' %}🟢 Progressing
+                    {% else %}⚪ Insufficient Data{% endif %}
+                </div>
+            </div>
+
+            {% if analysis.exercise.exercise_type %}
+            <div class="plateau-exercise-type">{{ analysis.exercise.exercise_type }}</div>
+            {% endif %}
+
+            {% if analysis.status != 'insufficient_data' %}
+            <div class="plateau-metrics">
+                <div class="plateau-metric">
+                    <div class="metric-label">Strength (1RM)</div>
+                    <div class="metric-values">
+                        <span class="metric-value-old">{{ analysis.early_max_1rm }} kg</span>
+                        <span class="metric-arrow {% if analysis.strength_improvement_pct >= 2.5 %}arrow-up{% elif analysis.strength_improvement_pct < 0 %}arrow-down{% else %}arrow-flat{% endif %}">
+                            {% if analysis.strength_improvement_pct >= 2.5 %}↑{% elif analysis.strength_improvement_pct < 0 %}↓{% else %}→{% endif %}
+                        </span>
+                        <span class="metric-value-new">{{ analysis.recent_max_1rm }} kg</span>
+                    </div>
+                    <div class="metric-change {% if analysis.strength_improvement_pct >= 2.5 %}change-positive{% elif analysis.strength_improvement_pct < 0 %}change-negative{% else %}change-neutral{% endif %}">
+                        {% if analysis.strength_improvement_pct >= 0 %}+{% endif %}{{ analysis.strength_improvement_pct }}%
+                    </div>
+                </div>
+
+                <div class="plateau-metric">
+                    <div class="metric-label">Volume (avg)</div>
+                    <div class="metric-values">
+                        <span class="metric-value-old">{{ analysis.early_avg_volume }} kg</span>
+                        <span class="metric-arrow {% if analysis.volume_improvement_pct >= 2.5 %}arrow-up{% elif analysis.volume_improvement_pct < 0 %}arrow-down{% else %}arrow-flat{% endif %}">
+                            {% if analysis.volume_improvement_pct >= 2.5 %}↑{% elif analysis.volume_improvement_pct < 0 %}↓{% else %}→{% endif %}
+                        </span>
+                        <span class="metric-value-new">{{ analysis.recent_avg_volume }} kg</span>
+                    </div>
+                    <div class="metric-change {% if analysis.volume_improvement_pct >= 2.5 %}change-positive{% elif analysis.volume_improvement_pct < 0 %}change-negative{% else %}change-neutral{% endif %}">
+                        {% if analysis.volume_improvement_pct >= 0 %}+{% endif %}{{ analysis.volume_improvement_pct }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestion -->
+            <div class="plateau-suggestion">
+                {% if analysis.status == 'plateau' %}
+                    💡 Try changing the rep range, adding load, or deloading for a week.
+                {% elif analysis.status == 'stagnating' %}
+                    💡 Small tweak needed — adjust load, reps, or rest time to break through.
+                {% else %}
+                    ✅ Keep going — your training is paying off!
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="plateau-insufficient">
+                Log at least 4 sessions with working sets to see plateau analysis.
+                <br><small>{{ analysis.sessions_analyzed }} session{{ 's' if analysis.sessions_analyzed != 1 }} logged so far.</small>
+            </div>
+            {% endif %}
+
+            <div class="plateau-footer">
+                {{ analysis.total_sessions }} session{{ 's' if analysis.total_sessions != 1 }} total
+                · <a href="{{ url_for('exercise_detail', exercise_id=analysis.exercise.id) }}">View details →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <p>No strength exercise data found. Start logging working sets to see plateau analysis!</p>
+        <a href="{{ url_for('workout') }}" class="btn btn-primary">Start Workout</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

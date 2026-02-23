@@ -781,6 +781,127 @@ def delete_exercise(exercise_id):
     
     return redirect(url_for('exercises'))
 
+def detect_plateau(session_data, min_sessions=4, window=6, improvement_threshold=0.025):
+    """Detect if an exercise has plateaued based on estimated 1RM and volume progression.
+
+    Args:
+        session_data: list of dicts with 'date', 'max_1rm', 'total_volume', sorted by date
+        min_sessions: minimum sessions required for analysis
+        window: number of recent sessions to analyze
+        improvement_threshold: minimum fractional improvement to be considered progressing (2.5%)
+
+    Returns:
+        dict with 'status' (progressing/stagnating/plateau/insufficient_data) and metrics
+    """
+    if len(session_data) < min_sessions:
+        return {
+            'status': 'insufficient_data',
+            'sessions_analyzed': len(session_data),
+            'strength_improvement_pct': None,
+            'volume_improvement_pct': None,
+            'early_max_1rm': None,
+            'recent_max_1rm': None,
+            'early_avg_volume': None,
+            'recent_avg_volume': None,
+        }
+
+    recent = session_data[-window:]
+    mid = len(recent) // 2
+    early = recent[:mid]
+    latest = recent[mid:]
+
+    early_max_1rm = max(s['max_1rm'] for s in early)
+    recent_max_1rm = max(s['max_1rm'] for s in latest)
+    early_avg_volume = sum(s['total_volume'] for s in early) / len(early)
+    recent_avg_volume = sum(s['total_volume'] for s in latest) / len(latest)
+
+    strength_improvement = (recent_max_1rm - early_max_1rm) / early_max_1rm if early_max_1rm > 0 else 0
+    volume_improvement = (recent_avg_volume - early_avg_volume) / early_avg_volume if early_avg_volume > 0 else 0
+
+    strength_plateau = strength_improvement < improvement_threshold
+    volume_plateau = volume_improvement < improvement_threshold
+
+    if strength_plateau and volume_plateau:
+        status = 'plateau'
+    elif strength_plateau or volume_plateau:
+        status = 'stagnating'
+    else:
+        status = 'progressing'
+
+    return {
+        'status': status,
+        'sessions_analyzed': len(recent),
+        'strength_improvement_pct': round(strength_improvement * 100, 1),
+        'volume_improvement_pct': round(volume_improvement * 100, 1),
+        'early_max_1rm': round(early_max_1rm, 1),
+        'recent_max_1rm': round(recent_max_1rm, 1),
+        'early_avg_volume': round(early_avg_volume, 1),
+        'recent_avg_volume': round(recent_avg_volume, 1),
+    }
+
+
+def _build_session_data_for_exercise(exercise_id, user_id):
+    """Return per-session aggregated data for plateau detection."""
+    logs = db.session.query(WorkoutLog, WorkoutSession).join(
+        WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+    ).filter(
+        WorkoutLog.exercise_id == exercise_id,
+        WorkoutSession.user_id == user_id,
+        WorkoutLog.set_type == 'working',
+        WorkoutLog.weight.isnot(None),
+        WorkoutLog.reps.isnot(None)
+    ).order_by(WorkoutSession.start_time).all()
+
+    session_data_dict = {}
+    for log, session in logs:
+        date = session.start_time.strftime('%Y-%m-%d')
+        estimated_1rm = log.weight * (1 + log.reps / 30)
+        volume = log.weight * log.reps
+        if date not in session_data_dict:
+            session_data_dict[date] = {'max_1rm': estimated_1rm, 'total_volume': volume}
+        else:
+            session_data_dict[date]['max_1rm'] = max(session_data_dict[date]['max_1rm'], estimated_1rm)
+            session_data_dict[date]['total_volume'] += volume
+
+    return [{'date': d, **v} for d, v in sorted(session_data_dict.items())]
+
+
+@app.route('/plateaus')
+@login_required
+def plateaus():
+    """Plateau detection dashboard showing analysis for all strength exercises."""
+    exercises_with_data = db.session.query(Exercise).join(
+        WorkoutLog, Exercise.id == WorkoutLog.exercise_id
+    ).join(
+        WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+    ).filter(
+        WorkoutSession.user_id == current_user.id,
+        WorkoutLog.set_type == 'working',
+        WorkoutLog.weight.isnot(None),
+        WorkoutLog.reps.isnot(None)
+    ).distinct().order_by(Exercise.name).all()
+
+    exercise_analyses = []
+    for exercise in exercises_with_data:
+        session_data = _build_session_data_for_exercise(exercise.id, current_user.id)
+        info = detect_plateau(session_data)
+        info['exercise'] = exercise
+        info['total_sessions'] = len(session_data)
+        exercise_analyses.append(info)
+
+    status_order = {'plateau': 0, 'stagnating': 1, 'progressing': 2, 'insufficient_data': 3}
+    exercise_analyses.sort(key=lambda x: status_order.get(x['status'], 4))
+
+    counts = {
+        'plateau': sum(1 for a in exercise_analyses if a['status'] == 'plateau'),
+        'stagnating': sum(1 for a in exercise_analyses if a['status'] == 'stagnating'),
+        'progressing': sum(1 for a in exercise_analyses if a['status'] == 'progressing'),
+        'insufficient_data': sum(1 for a in exercise_analyses if a['status'] == 'insufficient_data'),
+    }
+
+    return render_template('plateaus.html', exercise_analyses=exercise_analyses, counts=counts)
+
+
 @app.route('/exercise/<int:exercise_id>')
 @login_required
 def exercise_detail(exercise_id):
@@ -867,7 +988,11 @@ def exercise_detail(exercise_id):
     # Calculate total statistics
     total_sets = len(workout_logs)
     total_workouts = len(set(log[1].id for log in workout_logs))
-    
+
+    # Plateau detection for this exercise
+    plateau_session_data = _build_session_data_for_exercise(exercise_id, current_user.id)
+    plateau_info = detect_plateau(plateau_session_data)
+
     return render_template(
         'exercise_detail.html',
         exercise=exercise,
@@ -876,7 +1001,8 @@ def exercise_detail(exercise_id):
         best_sets=best_sets,
         current_pr=current_pr,
         total_sets=total_sets,
-        total_workouts=total_workouts
+        total_workouts=total_workouts,
+        plateau_info=plateau_info
     )
 
 @app.route('/health')
