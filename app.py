@@ -20,7 +20,7 @@ import pytz
 load_dotenv()
 
 # Constants
-EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio']
+EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio', 'Compound']
 AMSTERDAM_TZ = pytz.timezone('Europe/Amsterdam')
 
 def now_amsterdam():
