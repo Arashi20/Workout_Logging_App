@@ -26,6 +26,8 @@
     
     --border-radius: 12px;
     --spacing: 1rem;
+    --accent-purple: #9c27b0;
+    --accent-purple-dark: #7b1fa2;
 }
 
 /* Dark Mode Theme */
@@ -1700,5 +1702,246 @@ tr:hover {
     .plateau-detail-metrics {
         flex-direction: column;
         gap: 0.75rem;
+    }
+}
+
+/* =========================================================
+   Workout Programs Page
+   ========================================================= */
+
+.programs-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.programs-header {
+    margin-bottom: 2rem;
+}
+
+.programs-header h1 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.programs-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Program accordion card */
+.program-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.program-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    gap: 1rem;
+    transition: background-color 0.2s;
+    color: var(--text-primary);
+}
+
+.program-toggle:hover {
+    background-color: var(--bg-color);
+}
+
+.program-toggle-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.program-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.program-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.program-chevron {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.program-chevron.chevron-open {
+    transform: rotate(90deg);
+}
+
+/* Program body (expanded content) */
+.program-body {
+    padding: 0 1.5rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.program-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background-color: var(--bg-color);
+    border-left: 3px solid var(--accent-gold);
+    padding: 0.75rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0 1.25rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.note-icon {
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+}
+
+/* Days grid */
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.day-card {
+    background-color: var(--bg-color);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border-color);
+}
+
+.day-card.day-rest {
+    opacity: 0.75;
+    border-style: dashed;
+}
+
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.day-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--primary-color);
+}
+
+.day-time {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.exercise-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.exercise-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.exercise-item.exercise-optional {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.exercise-optional-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-style: normal;
+    color: var(--accent-purple);
+    background-color: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    margin-right: 0.35rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.exercise-name {
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.exercise-prescription {
+    color: var(--accent-gold);
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.8rem;
+}
+
+/* Landing page card colour for Programs */
+.card-programs {
+    border-top: 4px solid var(--accent-purple);
+}
+
+.card-programs:hover {
+    border-top-color: var(--accent-purple-dark);
+}
+
+/* Programs empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+    .days-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .program-toggle {
+        padding: 1rem;
+    }
+
+    .program-body {
+        padding: 0 1rem 1rem;
+    }
+
+    .programs-header h1 {
+        font-size: 1.5rem;
     }
 }
