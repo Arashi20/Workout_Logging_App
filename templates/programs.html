@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Programs - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="programs-container">
+    <div class="programs-header">
+        <h1>🗓️ Workout Programs</h1>
+        <p class="programs-subtitle">Your saved training routines — tap a program to expand it.</p>
+    </div>
+
+    {% if programs %}
+        {% for program in programs %}
+        <div class="program-card">
+            <button class="program-toggle" aria-expanded="false" aria-controls="program-body-{{ program.id }}">
+                <div class="program-toggle-left">
+                    <span class="program-name">{{ program.name }}</span>
+                    <span class="program-description">{{ program.description }}</span>
+                </div>
+                <span class="program-chevron" aria-hidden="true">▶</span>
+            </button>
+
+            <div class="program-body" id="program-body-{{ program.id }}" hidden>
+                {% if program.note %}
+                <div class="program-note">
+                    <span class="note-icon">📌</span>
+                    <span>{{ program.note }}</span>
+                </div>
+                {% endif %}
+
+                <div class="days-grid">
+                    {% for day in program.days %}
+                    <div class="day-card {% if day.rest %}day-rest{% endif %}">
+                        <div class="day-header">
+                            <span class="day-label">{{ day.label }}</span>
+                            <span class="day-time">⏱ {{ day.avg_time }}</span>
+                        </div>
+                        <ul class="exercise-list">
+                            {% for ex in day.exercises %}
+                            <li class="exercise-item {% if ex.optional %}exercise-optional{% endif %}">
+                                {% if ex.optional %}<span class="exercise-optional-badge">optional</span>{% endif %}
+                                <span class="exercise-name">{{ ex.name }}</span>
+                                {% if ex.prescription %}
+                                <span class="exercise-prescription">{{ ex.prescription }}</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🗓️</div>
+            <h2>No programs yet</h2>
+            <p>Programs are defined in <code>app.py</code> inside <code>WORKOUT_PROGRAMS</code>.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll('.program-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var expanded = this.getAttribute('aria-expanded') === 'true';
+            var body = document.getElementById(this.getAttribute('aria-controls'));
+            var chevron = this.querySelector('.program-chevron');
+
+            this.setAttribute('aria-expanded', String(!expanded));
+            if (expanded) {
+                body.hidden = true;
+                chevron.classList.remove('chevron-open');
+            } else {
+                body.hidden = false;
+                chevron.classList.add('chevron-open');
+            }
+        });
+    });
+</script>
+{% endblock %}

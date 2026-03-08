@@ -1107,6 +1107,116 @@ def bloodwork_chart_data():
         'test_date': latest.test_date.strftime('%Y-%m-%d')
     })
 
+# ---------------------------------------------------------------------------
+# Workout Programs – pre-rendered, no database table required.
+# To add a new program, append a dict to WORKOUT_PROGRAMS below.
+# ---------------------------------------------------------------------------
+
+WORKOUT_PROGRAMS = [
+    {
+        'id': 'upper-lower-6day',
+        'name': 'Upper / Lower 6-Day Split',
+        'description': (
+            'High-frequency 6-day split built around single working sets taken to '
+            'failure. Each muscle group is trained twice per week across Upper and '
+            'Lower days with an active rest day for neck & face work.'
+        ),
+        'note': (
+            '1 lightweight warmup set before any of the sets '
+            '(only if the targeted muscles have not been hit yet in that session).'
+        ),
+        'days': [
+            {
+                'label': 'Day 1: Upper',
+                'avg_time': '30–45 min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Machine Row',          'prescription': '1× to failure'},
+                    {'name': 'Incline Dumbbell Press',       'prescription': '1× to failure'},
+                    {'name': 'Pec Deck',                     'prescription': '1× to failure'},
+                    {'name': 'Lateral Raises',               'prescription': '1× dropset to failure'},
+                    {'name': 'Uphill Treadmill',             'prescription': '5–10 min', 'optional': True},
+                ],
+            },
+            {
+                'label': 'Day 2: Lower + Core',
+                'avg_time': '40–50 min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curl',                        'prescription': '1× to failure'},
+                    {'name': 'Squat',                                   'prescription': '1× to failure'},
+                    {'name': 'Leg Extension',                           'prescription': '1× to failure'},
+                    {'name': 'Hip Abduction',                           'prescription': '1× to failure'},
+                    {'name': 'Smith Machine Standing Calf Raises',      'prescription': '1× to failure'},
+                    {'name': 'Machine Crunch',                          'prescription': '2× to failure'},
+                ],
+            },
+            {
+                'label': 'Day 3: Rest',
+                'avg_time': '~30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+            {
+                'label': 'Day 4: Upper + Core',
+                'avg_time': '25–40 min',
+                'rest': False,
+                'exercises': [
+                    {'name': '(Close-Grip) Lat Pulldown',   'prescription': '1× to failure'},
+                    {'name': 'Dips',                         'prescription': '1× to failure'},
+                    {'name': 'Seated Machine Shoulder Press','prescription': '1× to failure'},
+                    {'name': 'Standing Barbell Curl',        'prescription': '1× to failure'},
+                    {'name': 'Cable Tricep Pushdown',        'prescription': '1× to failure'},
+                    {'name': 'Lying Leg Raises',             'prescription': '2× to failure'},
+                ],
+            },
+            {
+                'label': 'Day 5: Lower',
+                'avg_time': '25–35 min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curl',                   'prescription': '1× to failure'},
+                    {'name': 'Leg Extension (pre-exhaust) → Leg Press', 'prescription': '1× superset to failure'},
+                    {'name': 'Back Extension',                    'prescription': '1× to failure'},
+                    {'name': 'Hip Abduction',                     'prescription': '1× to failure'},
+                    {'name': 'Uphill Treadmill',                  'prescription': '5–10 min', 'optional': True},
+                ],
+            },
+            {
+                'label': 'Day 6: Arms & Delts + Core',
+                'avg_time': '40–45 min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Hanging Leg Raises',                   'prescription': '2× to failure'},
+                    {'name': 'Preacher Curl',                        'prescription': '1× to failure'},
+                    {'name': 'EZ Bar Skull Crusher',                 'prescription': '1× to failure'},
+                    {'name': 'Lateral Raises',                       'prescription': '1× dropset to failure'},
+                    {'name': 'Reverse Pec Deck',                     'prescription': '1× to failure'},
+                    {'name': 'Reverse Grip Barbell Wrist Curl',      'prescription': '1× dropset to failure'},
+                ],
+            },
+            {
+                'label': 'Day 7: Rest',
+                'avg_time': '~30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+        ],
+    },
+]
+
+
+@app.route('/programs')
+@login_required
+def programs():
+    """Workout programs page – pre-rendered from WORKOUT_PROGRAMS, no DB needed."""
+    return render_template('programs.html', programs=WORKOUT_PROGRAMS)
+
+
 @app.route('/export/workout-logs')
 @login_required
 def export_workout_logs():
