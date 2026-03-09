@@ -1114,12 +1114,12 @@ def bloodwork_chart_data():
 
 WORKOUT_PROGRAMS = [
     {
-        'id': 'upper-lower-6day',
-        'name': 'Upper / Lower 6-Day Split',
+        'id': 'heavy-duty-5day',
+        'name': 'Heavy Duty 5-Day Split',
         'description': (
-            'High-frequency 6-day split built around single working sets taken to '
+            'High-intensity 5-day split built around single working sets taken to '
             'failure. Each muscle group is trained twice per week across Upper and '
-            'Lower days with an active rest day for neck & face work.'
+            'Lower days with two active rest days for neck & face work.'
         ),
         'note': (
             '1 lightweight warmup set before any of the sets '

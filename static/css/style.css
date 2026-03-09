@@ -457,7 +457,7 @@ body {
 .card-workout:hover { border-color: var(--primary-color); }
 .card-history:hover { border-color: #9c27b0; }
 .card-prs:hover { border-color: var(--accent-gold); }
-.card-programs:hover { border-color: var(--secondary-color); }
+.card-programs:hover { border-color: #ff3075; }
 .card-weight:hover { border-color: #3853cf; }
 .card-health:hover { border-color: #ff6b6b; }
 
