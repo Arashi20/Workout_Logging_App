@@ -38,8 +38,7 @@
                         <ul class="exercise-list">
                             {% for ex in day.exercises %}
                             <li class="exercise-item {% if ex.optional %}exercise-optional{% endif %}">
-                                {% if ex.optional %}<span class="exercise-optional-badge">optional</span>{% endif %}
-                                <span class="exercise-name">{{ ex.name }}</span>
+                                <span class="exercise-name">{% if ex.optional %}<span class="exercise-optional-badge">optional</span> {% endif %}{{ ex.name }}</span>
                                 {% if ex.prescription %}
                                 <span class="exercise-prescription">{{ ex.prescription }}</span>
                                 {% endif %}
