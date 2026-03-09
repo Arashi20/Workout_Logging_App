@@ -645,13 +645,13 @@ body {
     margin-bottom: 2rem;
 }
 
-.exercise-name {
+.workout-logs .exercise-name {
     color: var(--primary-color);
     margin: 1.5rem 0 0.5rem 0;
     font-size: 1.25rem;
 }
 
-.exercise-name:first-of-type {
+.workout-logs .exercise-name:first-of-type {
     margin-top: 1rem;
 }
 
@@ -1033,7 +1033,8 @@ tr:hover {
     .workout-container > h1:first-child,
     .prs-container > h1:first-child,
     .weight-tracker-container > h1:first-child,
-    .exercises-container > h1:first-child {
+    .exercises-container > h1:first-child,
+    .programs-container .programs-header h1 {
         text-align: center;
     }
 
@@ -1864,11 +1865,10 @@ tr:hover {
 }
 
 .exercise-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
     font-size: 0.875rem;
 }
 
@@ -1887,12 +1887,12 @@ tr:hover {
     padding: 0.1rem 0.4rem;
     margin-right: 0.35rem;
     white-space: nowrap;
-    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .exercise-name {
     color: var(--text-primary);
-    flex: 1;
 }
 
 .exercise-prescription {
@@ -1900,15 +1900,6 @@ tr:hover {
     font-weight: 600;
     white-space: nowrap;
     font-size: 0.8rem;
-}
-
-/* Landing page card colour for Programs */
-.card-programs {
-    border-top: 4px solid var(--accent-purple);
-}
-
-.card-programs:hover {
-    border-top-color: var(--accent-purple-dark);
 }
 
 /* Programs empty state */
