@@ -512,6 +512,24 @@ def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_
                 )
                 db.session.add(pr)
             db.session.commit()
+def update_pr(user_id, exercise_id, weight, reps):
+    """Update personal record if the new weight is higher, or if weight is equal but reps are higher"""
+    pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
+    
+    if not pr or weight > pr.weight or (weight == pr.weight and reps > pr.reps):
+        if pr:
+            pr.weight = weight
+            pr.reps = reps
+            pr.achieved_at = now_amsterdam()
+        else:
+            pr = PersonalRecord(
+                user_id=user_id,
+                exercise_id=exercise_id,
+                weight=weight,
+                reps=reps
+            )
+            db.session.add(pr)
+        db.session.commit()
 
 @app.route('/prs')
 @login_required
