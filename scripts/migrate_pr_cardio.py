@@ -40,12 +40,13 @@ if not database_url:
     print('ERROR: DATABASE_URL environment variable is not set.')
     sys.exit(1)
 
+# Normalize postgres:// to postgresql:// (Railway provides postgres://)
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
-# Strip the psycopg3 driver suffix for the standard psycopg2-based migration
-# connection, so that plain psycopg2 / pg8000 can be used without the app stack.
-if database_url.startswith('postgresql+psycopg://'):
-    database_url = database_url.replace('postgresql+psycopg://', 'postgresql://', 1)
+
+# Ensure we use psycopg (version 3) driver since that's what's installed
+if database_url.startswith('postgresql://'):
+    database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
 
 engine = sa.create_engine(database_url)
 
