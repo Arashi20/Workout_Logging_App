@@ -1518,6 +1518,7 @@ def migrate_schema():
         
         # Add column(s) below if missing from the current schema
         # In Railway, just fill in "flask migrate-schema" as the command in the pre-deploy step and it will run this migration before deploying the new code with the updated model
+        # Or add your migration script to \scripts and then use python \scripts\migrate_PLACEHOLDER to run it against your database URL directly for more complex migrations.
 
         
         
