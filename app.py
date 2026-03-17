@@ -471,10 +471,10 @@ def delete_set(log_id):
     return redirect(url_for('workout'))
 
 def update_pr(user_id, exercise_id, weight, reps):
-    """Update personal record if the new weight is higher"""
+    """Update personal record if the new weight is higher, or if weight is equal but reps are higher"""
     pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
     
-    if not pr or weight > pr.weight:
+    if not pr or weight > pr.weight or (weight == pr.weight and reps > pr.reps):
         if pr:
             pr.weight = weight
             pr.reps = reps
