@@ -66,8 +66,10 @@ class PersonalRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
-    weight = db.Column(db.Float, nullable=False)
-    reps = db.Column(db.Integer, nullable=False)
+    weight = db.Column(db.Float, nullable=True)        # NULL for cardio PRs
+    reps = db.Column(db.Integer, nullable=True)        # NULL for cardio PRs
+    calories = db.Column(db.Float, nullable=True)      # NULL for non-cardio PRs
+    time_minutes = db.Column(db.Float, nullable=True)  # NULL for non-cardio PRs
     achieved_at = db.Column(db.DateTime, default=now_amsterdam)
     
     __table_args__ = (db.UniqueConstraint('user_id', 'exercise_id', name='unique_user_exercise_pr'),)
