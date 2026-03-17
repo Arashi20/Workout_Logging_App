@@ -41,7 +41,14 @@
         </div>
         {% if current_pr %}
         <div class="stat-card pr-card">
-            <div class="stat-value">{{ current_pr.weight|round(1) }} kg × {{ current_pr.reps }}</div>
+            <div class="stat-value">
+                {% if current_pr.calories is not none %}
+                    {{ current_pr.calories|int }} cal
+                    {% if current_pr.time_minutes %}/ {{ current_pr.time_minutes }} min{% endif %}
+                {% else %}
+                    {{ current_pr.weight|round(1) }} kg × {{ current_pr.reps }}
+                {% endif %}
+            </div>
             <div class="stat-label">PR</div>
         </div>
         {% endif %}
