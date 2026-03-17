@@ -418,10 +418,12 @@ def finish_workout():
             flash('No sets were logged: workout cancelled!', 'info')
         else:
             # Process working sets from this session and update PRs
-            # Note: Only working sets with weight are used for PR updates
             for log in all_logs:
-                if log.set_type == 'working' and log.weight:
-                    update_pr(current_user.id, log.exercise_id, log.weight, log.reps)
+                if log.set_type == 'working':
+                    if log.weight is not None:
+                        update_pr(current_user.id, log.exercise_id, weight=log.weight, reps=log.reps)
+                    elif log.calories is not None:
+                        update_pr(current_user.id, log.exercise_id, calories=log.calories, time_minutes=log.time_minutes)
             
             # Mark session as finished
             active_session.end_time = now_amsterdam()
@@ -470,6 +472,46 @@ def delete_set(log_id):
     
     return redirect(url_for('workout'))
 
+def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_minutes=None):
+    """Update personal record if the new performance is better.
+    
+    For strength exercises: PR is the highest weight lifted.
+    For cardio exercises: PR is the most calories burned in a single set.
+    """
+    pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
+
+    if calories is not None:
+        # Cardio PR: tracked by calories burned
+        if not pr or pr.calories is None or calories > pr.calories:
+            if pr:
+                pr.calories = calories
+                pr.time_minutes = time_minutes
+                pr.achieved_at = now_amsterdam()
+            else:
+                pr = PersonalRecord(
+                    user_id=user_id,
+                    exercise_id=exercise_id,
+                    calories=calories,
+                    time_minutes=time_minutes
+                )
+                db.session.add(pr)
+            db.session.commit()
+    elif weight is not None:
+        # Strength PR: tracked by weight lifted
+        if not pr or pr.weight is None or weight > pr.weight:
+            if pr:
+                pr.weight = weight
+                pr.reps = reps
+                pr.achieved_at = now_amsterdam()
+            else:
+                pr = PersonalRecord(
+                    user_id=user_id,
+                    exercise_id=exercise_id,
+                    weight=weight,
+                    reps=reps
+                )
+                db.session.add(pr)
+            db.session.commit()
 def update_pr(user_id, exercise_id, weight, reps):
     """Update personal record if the new weight is higher, or if weight is equal but reps are higher"""
     pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()

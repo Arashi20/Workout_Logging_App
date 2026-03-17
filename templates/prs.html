@@ -19,8 +19,15 @@
                         <span class="pr-date">{{ pr.achieved_at.strftime('%Y-%m-%d') }}</span>
                     </div>
                     <div class="pr-details">
+                        {% if pr.calories is not none %}
+                        <span class="pr-weight">{{ pr.calories | int }} cal</span>
+                        {% if pr.time_minutes is not none %}
+                        <span class="pr-reps">/ {{ pr.time_minutes }} min</span>
+                        {% endif %}
+                        {% else %}
                         <span class="pr-weight">{{ pr.weight }} kg</span>
                         <span class="pr-reps">× {{ pr.reps }} reps</span>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
