@@ -574,10 +574,12 @@ def history():
     # Get all sessions for date filter list
     all_sessions = base_query.order_by(WorkoutSession.start_time.desc()).all()
     
-    # Extract unique dates for filter
+    # Extract the 5 most recent unique dates for filter buttons
     available_dates = []
     seen_dates = set()
     for session in all_sessions:
+        if len(available_dates) >= 5:
+            break
         date_str = session.start_time.strftime('%Y-%m-%d')
         if date_str not in seen_dates:
             available_dates.append({
