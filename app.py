@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
-from sqlalchemy import event, text, inspect
+from sqlalchemy import event, text, inspect, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 import click
@@ -473,51 +473,61 @@ def delete_set(log_id):
     return redirect(url_for('workout'))
 
 def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_minutes=None):
-    """Update personal record if the new performance is better.
-    
+    """Add a new personal record if the new performance is better than the current best.
+
     For strength exercises: PR is the highest weight lifted.
     For cardio exercises: PR is the most calories burned in a single set.
-    """
-    pr = PersonalRecord.query.filter_by(user_id=user_id, exercise_id=exercise_id).first()
 
+    Historical PR rows are preserved in the database; only a new row is inserted
+    when performance improves.
+    """
     if calories is not None:
-        # Cardio PR: tracked by calories burned
-        if not pr or pr.calories is None or calories > pr.calories:
-            if pr:
-                pr.calories = calories
-                pr.time_minutes = time_minutes
-                pr.achieved_at = now_amsterdam()
-            else:
-                pr = PersonalRecord(
-                    user_id=user_id,
-                    exercise_id=exercise_id,
-                    calories=calories,
-                    time_minutes=time_minutes
-                )
-                db.session.add(pr)
+        # Cardio PR: tracked by calories burned — find current best
+        best = PersonalRecord.query.filter_by(
+            user_id=user_id, exercise_id=exercise_id
+        ).order_by(PersonalRecord.calories.desc()).first()
+
+        if not best or best.calories is None or calories > best.calories:
+            pr = PersonalRecord(
+                user_id=user_id,
+                exercise_id=exercise_id,
+                calories=calories,
+                time_minutes=time_minutes
+            )
+            db.session.add(pr)
             db.session.commit()
     elif weight is not None:
-        # Strength PR: tracked by weight lifted
-        if not pr or pr.weight is None or weight > pr.weight:
-            if pr:
-                pr.weight = weight
-                pr.reps = reps
-                pr.achieved_at = now_amsterdam()
-            else:
-                pr = PersonalRecord(
-                    user_id=user_id,
-                    exercise_id=exercise_id,
-                    weight=weight,
-                    reps=reps
-                )
-                db.session.add(pr)
+        # Strength PR: tracked by weight lifted — find current best
+        best = PersonalRecord.query.filter_by(
+            user_id=user_id, exercise_id=exercise_id
+        ).order_by(PersonalRecord.weight.desc()).first()
+
+        if not best or best.weight is None or weight > best.weight:
+            pr = PersonalRecord(
+                user_id=user_id,
+                exercise_id=exercise_id,
+                weight=weight,
+                reps=reps
+            )
+            db.session.add(pr)
             db.session.commit()
 
 
 @app.route('/prs')
 @login_required
 def prs():
-    personal_records = PersonalRecord.query.filter_by(user_id=current_user.id).order_by(PersonalRecord.achieved_at.desc()).all()
+    # Subquery: for each exercise, find the id of the best (most recently inserted) PR.
+    # Since update_pr() only inserts a new row when performance strictly improves,
+    # the row with the highest id per exercise is always the current best PR.
+    best_subq = db.session.query(
+        func.max(PersonalRecord.id).label('best_id')
+    ).filter(
+        PersonalRecord.user_id == current_user.id
+    ).group_by(PersonalRecord.exercise_id).subquery()
+
+    personal_records = PersonalRecord.query.join(
+        best_subq, PersonalRecord.id == best_subq.c.best_id
+    ).all()
     
     # Group PRs by exercise type
     grouped_prs = defaultdict(list)

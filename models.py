@@ -72,7 +72,7 @@ class PersonalRecord(db.Model):
     time_minutes = db.Column(db.Float, nullable=True)  # NULL for non-cardio PRs
     achieved_at = db.Column(db.DateTime, default=now_amsterdam)
     
-    __table_args__ = (db.UniqueConstraint('user_id', 'exercise_id', name='unique_user_exercise_pr'),)
+    __table_args__ = (db.Index('ix_personal_records_user_exercise', 'user_id', 'exercise_id'),)
 
 class WeightLog(db.Model):
     __tablename__ = 'weight_logs'
