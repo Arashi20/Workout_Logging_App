@@ -235,13 +235,16 @@ def workout():
     exercises_list = [{'id': ex.id, 'name': ex.name, 'is_bodyweight': ex.is_bodyweight, 'is_cardio': ex.is_cardio} for ex in exercises]
     workout_logs = []
     
+    start_epoch_ms = None
     if active_session:
         workout_logs = WorkoutLog.query.filter_by(session_id=active_session.id).order_by(WorkoutLog.created_at).all()
-    
+        start_epoch_ms = int(AMSTERDAM_TZ.localize(active_session.start_time).timestamp() * 1000)
+
     return render_template('workout.html', 
                          active_session=active_session,
                          exercises=exercises_list,
-                         workout_logs=workout_logs)
+                         workout_logs=workout_logs,
+                         start_epoch_ms=start_epoch_ms)
 
 @app.route('/workout/start', methods=['POST'])
 @login_required
