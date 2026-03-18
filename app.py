@@ -476,7 +476,8 @@ def delete_set(log_id):
 def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_minutes=None):
     """Add a new personal record if the new performance is better than the current best.
 
-    For strength exercises: PR is the highest weight lifted.
+    For strength exercises: PR is the highest weight lifted; if weight equals the
+    current best, more reps at that weight also counts as a new PR.
     For cardio exercises: PR is the most calories burned in a single set.
 
     Historical PR rows are preserved in the database; only a new row is inserted
@@ -498,12 +499,18 @@ def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_
             db.session.add(pr)
             db.session.commit()
     elif weight is not None:
-        # Strength PR: tracked by weight lifted — find current best
+        # Strength PR: tracked by weight lifted, then reps — find current best
         best = PersonalRecord.query.filter_by(
             user_id=user_id, exercise_id=exercise_id
-        ).order_by(PersonalRecord.weight.desc()).first()
+        ).order_by(PersonalRecord.weight.desc(), PersonalRecord.reps.desc()).first()
 
-        if not best or best.weight is None or weight > best.weight:
+        is_better = (
+            not best
+            or best.weight is None
+            or weight > best.weight
+            or (weight == best.weight and reps is not None and best.reps is not None and reps > best.reps)
+        )
+        if is_better:
             pr = PersonalRecord(
                 user_id=user_id,
                 exercise_id=exercise_id,
