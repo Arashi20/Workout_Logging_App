@@ -7,6 +7,9 @@
     <h1>Personal Records 🏆</h1>
 
     {% if grouped_prs %}
+    <div class="search-bar-container">
+        <input type="text" id="pr-search" placeholder="🔍 Search personal records..." autocomplete="off">
+    </div>
     <div class="prs-list">
         {% for exercise_type, prs in grouped_prs %}
         <div class="pr-category">
@@ -42,4 +45,29 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+    const prSearchInput = document.getElementById('pr-search');
+    if (prSearchInput) {
+        prSearchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            const categories = document.querySelectorAll('.pr-category');
+            categories.forEach(function(category) {
+                const cards = category.querySelectorAll('.pr-card');
+                let visibleCount = 0;
+                cards.forEach(function(card) {
+                    const h3 = card.querySelector('h3');
+                    const name = h3 ? h3.textContent.toLowerCase() : '';
+                    if (!query || name.includes(query)) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                category.style.display = visibleCount > 0 ? '' : 'none';
+            });
+        });
+    }
+</script>
 {% endblock %}

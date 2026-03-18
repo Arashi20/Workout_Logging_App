@@ -50,6 +50,9 @@
     </div>
 
     {% if grouped_exercises %}
+    <div class="search-bar-container">
+        <input type="text" id="exercise-filter" placeholder="🔍 Search exercises..." autocomplete="off">
+    </div>
     <div class="exercises-list">
         {% for exercise_type, exercises in grouped_exercises %}
         <div class="exercise-category">
@@ -112,6 +115,30 @@
 </div>
 
 <script>
+    // Search/filter exercises by name
+    const exerciseFilterInput = document.getElementById('exercise-filter');
+    if (exerciseFilterInput) {
+        exerciseFilterInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            const categories = document.querySelectorAll('.exercise-category');
+            categories.forEach(function(category) {
+                const cards = category.querySelectorAll('.exercise-card');
+                let visibleCount = 0;
+                cards.forEach(function(card) {
+                    const h3 = card.querySelector('h3');
+                    const name = h3 ? h3.textContent.toLowerCase() : '';
+                    if (!query || name.includes(query)) {
+                        card.style.display = '';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                category.style.display = visibleCount > 0 ? '' : 'none';
+            });
+        });
+    }
+
     // Custom modal for deleting exercises
     const deleteButtons = document.querySelectorAll('.delete-exercise-btn');
     const deleteModal = document.getElementById('delete-exercise-modal');
