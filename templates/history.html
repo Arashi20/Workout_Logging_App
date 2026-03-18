@@ -42,19 +42,23 @@
         
         {% if available_dates|length > 0 %}
         <div class="date-filter-group">
-            <h4>Select Specific Date:</h4>
+            <h4>Recent Dates:</h4>
             <div class="date-buttons">
-                {% for date_info in available_dates[:10] %}
+                {% for date_info in available_dates %}
                     {% if filter_date == date_info.date %}
                     <span class="date-btn date-btn-active">{{ date_info.display }}</span>
                     {% else %}
                     <a href="{{ url_for('history', date=date_info.date) }}" class="date-btn">{{ date_info.display }}</a>
                     {% endif %}
                 {% endfor %}
-                {% if available_dates|length > 10 %}
-                <span class="date-note">+ {{ available_dates|length - 10 }} more dates (use "Show All" to see)</span>
-                {% endif %}
             </div>
+        </div>
+        <div class="date-filter-group">
+            <h4>Search Older Date:</h4>
+            <form method="get" action="{{ url_for('history') }}" class="date-search-form">
+                <input type="date" name="date" value="{{ filter_date or '' }}" class="date-input" max="{{ available_dates[0].date if available_dates else '' }}">
+                <button type="submit" class="filter-btn">Go</button>
+            </form>
         </div>
         {% endif %}
     </div>
@@ -214,11 +218,21 @@
     font-weight: 600;
 }
 
-.date-note {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    font-style: italic;
-    padding: 0.5rem;
+.date-search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.date-input {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    cursor: pointer;
 }
 
 .history-list {
