@@ -1182,6 +1182,28 @@ tr:hover {
     border-color: var(--primary-color);
 }
 
+/* Search bar for Exercises and Personal Records pages */
+.search-bar-container {
+    margin-bottom: 1.5rem;
+}
+
+.search-bar-container input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.search-bar-container input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
 /* Dark Mode Toggle */
 .theme-toggle {
     background: none;
