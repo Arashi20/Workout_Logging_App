@@ -155,7 +155,8 @@ def index():
         ).join(
             Exercise, PersonalRecord.exercise_id == Exercise.id
         ).filter(
-            PersonalRecord.user_id == current_user.id
+            PersonalRecord.user_id == current_user.id,
+            Exercise.is_cardio.is_(False)
         ).order_by(
             PersonalRecord.weight.desc()
         ).first()
