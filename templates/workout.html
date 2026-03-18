@@ -132,7 +132,7 @@
 
 <script>
     {% if active_session %}
-    const startTime = new Date('{{ active_session.start_time.isoformat() }}Z');
+    const startTime = new Date({{ start_epoch_ms }});
     
     function updateDuration() {
         const now = new Date();
