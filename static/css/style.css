@@ -851,6 +851,8 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     border-left: 4px solid var(--success-color);
+    display: flex;
+    flex-direction: column;
 }
 
 .exercise-header {
@@ -901,7 +903,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 1rem;
+    margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
