@@ -1344,6 +1344,8 @@ def export_personal_records():
         Exercise.name.label('exercise_name'),
         PersonalRecord.weight,
         PersonalRecord.reps,
+        PersonalRecord.calories,
+        PersonalRecord.time_minutes,
         PersonalRecord.achieved_at
     ).join(
         Exercise, PersonalRecord.exercise_id == Exercise.id
@@ -1358,7 +1360,7 @@ def export_personal_records():
     writer = csv.writer(si)
     
     # Write header
-    writer.writerow(['exercise_name', 'weight', 'reps', 'achieved_date'])
+    writer.writerow(['exercise_name', 'weight', 'reps', 'calories', 'time_minutes', 'achieved_date'])
     
     # Write data rows
     for pr in prs:
@@ -1366,6 +1368,8 @@ def export_personal_records():
             pr.exercise_name,
             pr.weight,
             pr.reps,
+            pr.calories,
+            pr.time_minutes,
             pr.achieved_at.strftime('%Y-%m-%d %H:%M:%S')
         ])
     
