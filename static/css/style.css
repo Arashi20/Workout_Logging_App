@@ -712,6 +712,35 @@ body {
     margin: 0;
 }
 
+/* PR badge shown on a logged set that beats the personal record */
+.pr-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    background-color: var(--accent-gold);
+    color: #1a1a1a;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Live PR indicator shown above the Add Set form */
+.pr-indicator {
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    background-color: var(--accent-gold);
+    color: #1a1a1a;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+[data-theme="dark"] .pr-badge,
+[data-theme="dark"] .pr-indicator {
+    color: #1a1a1a;
+}
+
 /* PRs Page */
 .prs-list {
     margin-top: 2rem;
