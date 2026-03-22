@@ -240,11 +240,82 @@ def workout():
         workout_logs = WorkoutLog.query.filter_by(session_id=active_session.id).order_by(WorkoutLog.created_at).all()
         start_epoch_ms = int(AMSTERDAM_TZ.localize(active_session.start_time).timestamp() * 1000)
 
-    return render_template('workout.html', 
+    # Build a dict of best existing PRs keyed by exercise_id for the PR indicator
+    best_subq = db.session.query(
+        func.max(PersonalRecord.id).label('best_id')
+    ).filter(
+        PersonalRecord.user_id == current_user.id
+    ).group_by(PersonalRecord.exercise_id).subquery()
+
+    best_prs = PersonalRecord.query.join(
+        best_subq, PersonalRecord.id == best_subq.c.best_id
+    ).all()
+
+    pr_by_exercise = {}
+    for pr in best_prs:
+        pr_by_exercise[pr.exercise_id] = {
+            'weight': float(pr.weight) if pr.weight is not None else None,
+            'reps': pr.reps,
+            'calories': float(pr.calories) if pr.calories is not None else None,
+        }
+
+    # Determine which sets in the current session are potential PRs.
+    # A set is a PR if it beats the historical best AND is the best set so far
+    # in this session for that exercise (mirroring finish_workout PR logic).
+    pr_set_ids = set()
+    if active_session and workout_logs:
+        session_best = {}  # exercise_id -> {'weight', 'reps', 'calories'}
+        for log in workout_logs:
+            if log.set_type != 'working':
+                continue
+            ex_id = log.exercise_id
+            existing_pr = pr_by_exercise.get(ex_id)
+            session_pr = session_best.get(ex_id)
+            is_pr = False
+
+            if log.weight is not None:
+                weight = float(log.weight)
+                reps = log.reps or 0
+                beats_existing = (
+                    not existing_pr
+                    or existing_pr['weight'] is None
+                    or weight > existing_pr['weight']
+                    or (weight == existing_pr['weight'] and reps > (existing_pr['reps'] or 0))
+                )
+                beats_session = (
+                    not session_pr
+                    or weight > session_pr['weight']
+                    or (weight == session_pr['weight'] and reps > session_pr['reps'])
+                )
+                is_pr = beats_existing and beats_session
+                if beats_session:
+                    session_best[ex_id] = {'weight': weight, 'reps': reps, 'calories': None}
+
+            elif log.calories is not None:
+                calories = float(log.calories)
+                beats_existing = (
+                    not existing_pr
+                    or existing_pr['calories'] is None
+                    or calories > existing_pr['calories']
+                )
+                beats_session = (
+                    not session_pr
+                    or calories > session_pr['calories']
+                )
+                is_pr = beats_existing and beats_session
+                if beats_session:
+                    session_best[ex_id] = {'weight': None, 'reps': None, 'calories': calories}
+
+            if is_pr:
+                pr_set_ids.add(log.id)
+
+    return render_template('workout.html',
                          active_session=active_session,
                          exercises=exercises_list,
                          workout_logs=workout_logs,
-                         start_epoch_ms=start_epoch_ms)
+                         start_epoch_ms=start_epoch_ms,
+                         pr_set_ids=pr_set_ids,
+                         pr_by_exercise=pr_by_exercise)
 
 @app.route('/workout/start', methods=['POST'])
 @login_required

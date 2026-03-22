@@ -24,6 +24,7 @@
         <div id="exercise-validation-message" class="validation-message" style="display: none;">
             Please select an exercise from the dropdown before adding a set.
         </div>
+        <div id="pr-indicator" class="pr-indicator" style="display:none;">🏆 Potential PR!</div>
         <form method="POST" action="{{ url_for('add_set') }}" class="workout-form" id="add-set-form">
             <div class="form-row">
                 <div class="form-group">
@@ -77,6 +78,9 @@
                             {% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps
                         {% endif %}
                     </span>
+                    {% if log.id in pr_set_ids %}
+                    <span class="pr-badge">🏆 PR</span>
+                    {% endif %}
                     <span class="set-type">{{ log.set_type }}</span>
                     <button type="button" class="btn-delete" data-log-id="{{ log.id }}" data-exercise-name="{{ log.exercise.name }}" data-set-info="{% if log.exercise.is_cardio %}{% if log.calories %}{{ log.calories }} cal{% endif %}{% if log.calories and log.time_minutes %} / {% endif %}{% if log.time_minutes %}{{ log.time_minutes }} min{% endif %}{% else %}{% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps{% endif %}" aria-label="Delete set">×</button>
                 </div>
@@ -212,12 +216,14 @@
     
     // Searchable exercise dropdown
     const exercises = {{ exercises|tojson }};
+    const prByExercise = {{ pr_by_exercise|tojson }};
     
     const exerciseSearch = document.getElementById('exercise_search');
     const exerciseId = document.getElementById('exercise_id');
     const exerciseDropdown = document.getElementById('exercise_dropdown');
     const weightInput = document.getElementById('weight');
     const repsInput = document.getElementById('reps');
+    const prIndicator = document.getElementById('pr-indicator');
     
     let selectedIndex = -1;
     
@@ -306,11 +312,55 @@
                 warmupOption.style.display = '';
             }
         }
+        checkPrIndicator();
     }
     
+    function checkPrIndicator() {
+        if (!prIndicator) return;
+        const exId = parseInt(exerciseId.value);
+        const setTypeSelect = document.getElementById('set_type');
+        const isWorking = !setTypeSelect || setTypeSelect.value === 'working';
+
+        if (!exId || !isWorking) {
+            prIndicator.style.display = 'none';
+            return;
+        }
+
+        const selectedEx = exercises.find(e => e.id === exId);
+        if (!selectedEx) {
+            prIndicator.style.display = 'none';
+            return;
+        }
+
+        const existingPr = prByExercise[exId];
+        let wouldBePr = false;
+
+        if (selectedEx.is_cardio) {
+            const calories = parseFloat(weightInput.value);
+            if (!isNaN(calories) && calories > 0) {
+                wouldBePr = !existingPr || existingPr.calories === null || calories > existingPr.calories;
+            }
+        } else {
+            const weight = parseFloat(weightInput.value);
+            const reps = parseInt(repsInput.value);
+            if (!isNaN(reps) && reps > 0) {
+                if (!existingPr || existingPr.weight === null) {
+                    wouldBePr = true;
+                } else {
+                    const w = isNaN(weight) ? 0 : weight;
+                    wouldBePr = w > existingPr.weight ||
+                        (w === existingPr.weight && reps > (existingPr.reps || 0));
+                }
+            }
+        }
+
+        prIndicator.style.display = wouldBePr ? 'block' : 'none';
+    }
+
     exerciseSearch.addEventListener('input', function() {
         const searchTerm = this.value.trim();
         exerciseId.value = '';
+        prIndicator.style.display = 'none';
         
         if (searchTerm.length === 0) {
             exerciseDropdown.classList.remove('active');
@@ -373,6 +423,12 @@
             selectedIndex = -1;
         }
     });
+
+    // Update PR indicator when weight, reps, or set type changes
+    if (weightInput) weightInput.addEventListener('input', checkPrIndicator);
+    if (repsInput) repsInput.addEventListener('input', checkPrIndicator);
+    const setTypeSelectEl = document.getElementById('set_type');
+    if (setTypeSelectEl) setTypeSelectEl.addEventListener('change', checkPrIndicator);
     
     // Form validation to ensure an exercise is selected
     const addSetForm = document.getElementById('add-set-form');
