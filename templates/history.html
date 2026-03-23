@@ -408,6 +408,30 @@ function generateWorkoutImage(data) {
         canvas.height = H;
         var ctx = canvas.getContext('2d');
 
+        function drawRoundRect(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function drawGradientDivider(yPos) {
+            var grad = ctx.createLinearGradient(140, yPos, W - 140, yPos);
+            grad.addColorStop(0, 'rgba(203,213,224,0)');
+            grad.addColorStop(0.25, 'rgba(203,213,224,0.9)');
+            grad.addColorStop(0.75, 'rgba(203,213,224,0.9)');
+            grad.addColorStop(1, 'rgba(203,213,224,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(140, yPos, W - 280, 1);
+        }
+
         function drawContent(logoImg) {
             ctx.textAlign = 'center';
 
@@ -416,43 +440,42 @@ function generateWorkoutImage(data) {
             ctx.fillRect(0, 0, W, H);
 
             // Large logo as hero background image (top section)
-            var logoSize = 520;
+            var logoSize = 480;
             var logoX = (W - logoSize) / 2;
-            var logoY = 50;
+            var logoY = 60;
             if (logoImg) {
                 ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
                 // Soft fade from logo into white below
-                var fade = ctx.createLinearGradient(0, logoY + logoSize - 140, 0, logoY + logoSize + 20);
+                var fade = ctx.createLinearGradient(0, logoY + logoSize - 160, 0, logoY + logoSize + 10);
                 fade.addColorStop(0, 'rgba(255,255,255,0)');
                 fade.addColorStop(1, 'rgba(255,255,255,1)');
                 ctx.fillStyle = fade;
-                ctx.fillRect(0, logoY + logoSize - 140, W, 160);
+                ctx.fillRect(0, logoY + logoSize - 160, W, 170);
             }
 
-            var y = logoY + logoSize + 40;
+            var y = logoY + logoSize + 20;
 
             // Brand name
             ctx.fillStyle = '#0d1b2a';
-            ctx.font = 'bold 68px Arial, sans-serif';
+            ctx.font = 'bold 64px Arial, sans-serif';
             ctx.fillText('AMStrength', W / 2, y);
-            y += 56;
+            y += 50;
 
             // Subtitle
-            ctx.fillStyle = '#A0AEC0';
-            ctx.font = 'bold 26px Arial, sans-serif';
+            ctx.fillStyle = '#718096';
+            ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillText('W O R K O U T   C O M P L E T E', W / 2, y);
-            y += 54;
+            y += 52;
 
-            // Thin divider
-            ctx.fillStyle = '#E2E8F0';
-            ctx.fillRect(140, y, W - 280, 1);
-            y += 40;
+            // Gradient divider
+            drawGradientDivider(y);
+            y += 48;
 
             // Date
             ctx.fillStyle = '#0d1b2a';
-            ctx.font = '34px Arial, sans-serif';
+            ctx.font = 'bold 36px Arial, sans-serif';
             ctx.fillText(data.date, W / 2, y);
-            y += 46;
+            y += 42;
 
             // Time range + duration
             ctx.fillStyle = '#A0AEC0';
@@ -460,7 +483,13 @@ function generateWorkoutImage(data) {
             ctx.fillText(data.timeRange + '   ·   ' + data.duration + ' min', W / 2, y);
             y += 64;
 
-            // Stats row
+            // Stats row with light pill background
+            var statsRowH = 110;
+            var statsRowY = y - 18;
+            ctx.fillStyle = '#F7FAFC';
+            drawRoundRect(80, statsRowY, W - 160, statsRowH, 16);
+            ctx.fill();
+
             var stats = [
                 { label: 'EXERCISES', value: String(data.exercises) },
                 { label: 'WORKING SETS', value: String(data.sets) },
@@ -470,24 +499,23 @@ function generateWorkoutImage(data) {
             stats.forEach(function(s, i) {
                 var cx = colW * i + colW / 2;
                 ctx.fillStyle = '#0d1b2a';
-                ctx.font = 'bold 60px Arial, sans-serif';
-                ctx.fillText(s.value, cx, y);
+                ctx.font = 'bold 56px Arial, sans-serif';
+                ctx.fillText(s.value, cx, y + 46);
                 ctx.fillStyle = '#A0AEC0';
-                ctx.font = 'bold 19px Arial, sans-serif';
-                ctx.fillText(s.label, cx, y + 36);
+                ctx.font = 'bold 18px Arial, sans-serif';
+                ctx.fillText(s.label, cx, y + 80);
             });
-            y += 106;
+            y += statsRowH + 28;
 
-            // Thin divider
-            ctx.fillStyle = '#E2E8F0';
-            ctx.fillRect(140, y, W - 280, 1);
-            y += 46;
+            // Gradient divider
+            drawGradientDivider(y);
+            y += 44;
 
             // Exercise list header
-            ctx.fillStyle = '#4A5568';
-            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#718096';
+            ctx.font = 'bold 20px Arial, sans-serif';
             ctx.fillText('E X E R C I S E S', W / 2, y);
-            y += 48;
+            y += 46;
 
             // Exercises (max 7)
             var shown = data.exerciseList.slice(0, 7);
@@ -495,18 +523,13 @@ function generateWorkoutImage(data) {
                 ctx.fillStyle = '#0d1b2a';
                 ctx.font = '28px Arial, sans-serif';
                 ctx.fillText(ex, W / 2, y);
-                y += 44;
+                y += 42;
             });
             if (data.exerciseList.length > 7) {
                 ctx.fillStyle = '#A0AEC0';
                 ctx.font = '24px Arial, sans-serif';
                 ctx.fillText('+ ' + (data.exerciseList.length - 7) + ' more', W / 2, y);
             }
-
-            // Footer
-            ctx.fillStyle = '#CBD5E0';
-            ctx.font = '20px Arial, sans-serif';
-            ctx.fillText('AMStrength Workout Logger', W / 2, H - 44);
 
             canvas.toBlob(resolve, 'image/png');
         }

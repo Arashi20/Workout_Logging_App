@@ -681,7 +681,7 @@ def history():
     # Calculate statistics for each session
     session_data = []
     for session in sessions:
-        logs = session.workout_logs
+        logs = sorted(session.workout_logs, key=lambda l: l.created_at)
         
         # Calculate total volume (weight x reps for all working sets)
         total_volume = sum(
