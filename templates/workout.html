@@ -63,10 +63,12 @@
     <div class="workout-logs">
         <h2>Today's Workout</h2>
         <div class="logs-list">
-            {% set current_exercise = '' %}
+            {% set ns = namespace(current_exercise='') %}
             {% for log in workout_logs %}
-                {% if log.exercise.name != current_exercise %}
-                    {% set current_exercise = log.exercise.name %}
+                {% if log.exercise.name != ns.current_exercise %}
+                    {% if ns.current_exercise != '' %}</div>{% endif %}
+                    {% set ns.current_exercise = log.exercise.name %}
+                    <div class="exercise-group">
                     <h3 class="exercise-name">{{ log.exercise.name }}</h3>
                 {% endif %}
                 <div class="log-item {% if log.set_type == 'warmup' %}warmup{% endif %}">
@@ -85,6 +87,7 @@
                     <button type="button" class="btn-delete" data-log-id="{{ log.id }}" data-exercise-name="{{ log.exercise.name }}" data-set-info="{% if log.exercise.is_cardio %}{% if log.calories %}{{ log.calories }} cal{% endif %}{% if log.calories and log.time_minutes %} / {% endif %}{% if log.time_minutes %}{{ log.time_minutes }} min{% endif %}{% else %}{% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps{% endif %}" aria-label="Delete set">×</button>
                 </div>
             {% endfor %}
+            {% if ns.current_exercise != '' %}</div>{% endif %}
         </div>
     </div>
     {% endif %}
