@@ -655,6 +655,14 @@ body {
     margin-top: 1rem;
 }
 
+.exercise-group {
+    margin-bottom: 1.25rem;
+}
+
+.exercise-group:last-child {
+    margin-bottom: 0;
+}
+
 .log-item {
     display: flex;
     justify-content: space-between;
