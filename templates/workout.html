@@ -265,6 +265,7 @@
         exerciseId.value = exercise.id;
         exerciseDropdown.classList.remove('active');
         selectedIndex = -1;
+        localStorage.setItem('lastWorkoutExercise', JSON.stringify({id: exercise.id, name: exercise.name}));
         
         // Update labels based on exercise type
         const weightLabel = document.getElementById('weight-label');
@@ -423,6 +424,18 @@
             selectedIndex = -1;
         }
     });
+
+    // Restore last selected exercise from localStorage (persists after adding a set)
+    const savedExercise = localStorage.getItem('lastWorkoutExercise');
+    if (savedExercise) {
+        try {
+            const saved = JSON.parse(savedExercise);
+            const fullEx = exercises.find(e => e.id === parseInt(saved.id, 10));
+            if (fullEx) {
+                selectExercise(fullEx);
+            }
+        } catch (e) {}
+    }
 
     // Update PR indicator when weight, reps, or set type changes
     if (weightInput) weightInput.addEventListener('input', checkPrIndicator);
