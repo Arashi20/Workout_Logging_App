@@ -49,6 +49,11 @@
                     <input type="number" id="weight" name="weight" step="0.5" min="0">
                 </div>
 
+                <div class="form-group" id="bodyweight-kg-group" style="display: none;">
+                    <label for="bodyweight_kg">Bodyweight (kg)</label>
+                    <input type="number" id="bodyweight_kg" name="bodyweight_kg" step="0.1" min="20" max="300" placeholder="Your bodyweight (kg)" value="{{ last_bodyweight_kg if last_bodyweight_kg is not none else '' }}">
+                </div>
+
                 <div class="form-group">
                     <label for="reps" id="reps-label" data-default-label="Reps" data-cardio-label="Time (min)">Reps</label>
                     <input type="number" id="reps" name="reps" step="1" min="1">
@@ -275,6 +280,7 @@
         const repsLabel = document.getElementById('reps-label');
         const setTypeSelect = document.getElementById('set_type');
         const warmupOption = setTypeSelect.querySelector('option[value="warmup"]');
+        const bodyweightKgGroup = document.getElementById('bodyweight-kg-group');
         
         if (exercise.is_cardio) {
             // Cardio exercise: change to Calories and Time
@@ -284,6 +290,7 @@
             repsInput.placeholder = 'Duration in minutes';
             repsInput.step = '0.5';
             repsInput.min = '0.5';
+            if (bodyweightKgGroup) bodyweightKgGroup.style.display = 'none';
         } else if (exercise.is_bodyweight) {
             // Bodyweight exercise
             weightLabel.textContent = weightLabel.dataset.bodyweightLabel;
@@ -292,6 +299,7 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
+            if (bodyweightKgGroup) bodyweightKgGroup.style.display = '';
         } else {
             // Regular strength exercise
             weightLabel.textContent = weightLabel.dataset.defaultLabel;
@@ -300,6 +308,7 @@
             repsInput.placeholder = '';
             repsInput.step = '1';
             repsInput.min = '1';
+            if (bodyweightKgGroup) bodyweightKgGroup.style.display = 'none';
         }
         
         // Handle warmup option visibility and selection
@@ -399,9 +408,9 @@
         } else if (e.key === 'Enter') {
             e.preventDefault();
             if (selectedIndex >= 0 && items[selectedIndex]) {
-                const id = items[selectedIndex].dataset.id;
-                const name = items[selectedIndex].textContent;
-                selectExercise({ id, name });
+                const id = parseInt(items[selectedIndex].dataset.id, 10);
+                const fullEx = exercises.find(e => e.id === id);
+                if (fullEx) selectExercise(fullEx);
             }
         } else if (e.key === 'Escape') {
             exerciseDropdown.classList.remove('active');

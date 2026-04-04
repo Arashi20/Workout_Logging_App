@@ -99,6 +99,11 @@ def init_app():
 # Run initialization
 init_app()
 
+def effective_volume(log):
+    """Return effective volume for a set, accounting for bodyweight exercises."""
+    weight = (log.bodyweight_kg or 0) + (log.weight or 0)
+    return weight * (log.reps or 0)
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -240,6 +245,15 @@ def workout():
         workout_logs = WorkoutLog.query.filter_by(session_id=active_session.id).order_by(WorkoutLog.created_at).all()
         start_epoch_ms = int(AMSTERDAM_TZ.localize(active_session.start_time).timestamp() * 1000)
 
+    # Get last logged bodyweight_kg for the user (to pre-fill the field)
+    last_bw_log = db.session.query(WorkoutLog.bodyweight_kg).join(
+        WorkoutSession, WorkoutLog.session_id == WorkoutSession.id
+    ).filter(
+        WorkoutSession.user_id == current_user.id,
+        WorkoutLog.bodyweight_kg.isnot(None)
+    ).order_by(WorkoutLog.id.desc()).first()
+    last_bodyweight_kg = last_bw_log[0] if last_bw_log else None
+
     # Build a dict of best existing PRs keyed by exercise_id for the PR indicator
     best_subq = db.session.query(
         func.max(PersonalRecord.id).label('best_id')
@@ -315,7 +329,8 @@ def workout():
                          workout_logs=workout_logs,
                          start_epoch_ms=start_epoch_ms,
                          pr_set_ids=pr_set_ids,
-                         pr_by_exercise=pr_by_exercise)
+                         pr_by_exercise=pr_by_exercise,
+                         last_bodyweight_kg=last_bodyweight_kg)
 
 @app.route('/workout/start', methods=['POST'])
 @login_required
@@ -448,6 +463,19 @@ def add_set():
                 flash('Invalid weight value', 'error')
                 return redirect(url_for('workout'))
         
+        bodyweight_kg_float = None
+        if exercise.is_bodyweight:
+            bodyweight_kg_raw = request.form.get('bodyweight_kg')
+            if bodyweight_kg_raw:
+                try:
+                    bodyweight_kg_float = float(bodyweight_kg_raw)
+                    if bodyweight_kg_float < 20 or bodyweight_kg_float > 300:
+                        flash('Bodyweight must be between 20 and 300 kg', 'error')
+                        return redirect(url_for('workout'))
+                except (ValueError, TypeError):
+                    flash('Invalid bodyweight value', 'error')
+                    return redirect(url_for('workout'))
+        
         # Get the current set number for this exercise in this session
         last_set = WorkoutLog.query.filter_by(
             session_id=active_session.id,
@@ -463,6 +491,7 @@ def add_set():
             set_number=set_number,
             reps=reps_int,
             weight=weight_float,
+            bodyweight_kg=bodyweight_kg_float,
             set_type=set_type
         )
     
@@ -685,7 +714,7 @@ def history():
         
         # Calculate total volume (weight x reps for all working sets)
         total_volume = sum(
-            (log.weight or 0) * (log.reps or 0) 
+            effective_volume(log)
             for log in logs 
             if log.set_type == 'working' and not log.exercise.is_cardio
         )
@@ -975,7 +1004,7 @@ def _build_session_data_for_exercise(exercise_id, user_id):
     for log, session in logs:
         date = session.start_time.strftime('%Y-%m-%d')
         estimated_1rm = log.weight * (1 + log.reps / 30)
-        volume = log.weight * log.reps
+        volume = effective_volume(log)
         if date not in session_data_dict:
             session_data_dict[date] = {'max_1rm': estimated_1rm, 'total_volume': volume}
         else:
@@ -1059,7 +1088,7 @@ def exercise_detail(exercise_id):
         if log.weight and log.reps:
             # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
             estimated_1rm = round(log.weight * (1 + log.reps / 30), 1)
-            volume = round(log.weight * log.reps, 1)
+            volume = round(effective_volume(log), 1)
             
             # Track best max weight per session date for progression chart
             if session_date not in session_dates:
@@ -1349,6 +1378,7 @@ def export_workout_logs():
         WorkoutLog.set_number,
         WorkoutLog.reps,
         WorkoutLog.weight,
+        WorkoutLog.bodyweight_kg,
         WorkoutLog.calories,
         WorkoutLog.time_minutes,
         WorkoutLog.set_type
@@ -1369,7 +1399,7 @@ def export_workout_logs():
     # Write header
     writer.writerow([
         'session_id', 'session_date', 'session_duration_minutes', 
-        'exercise_name', 'set_number', 'reps', 'weight', 'calories', 'time_minutes', 'set_type'
+        'exercise_name', 'set_number', 'reps', 'weight', 'bodyweight_kg', 'calories', 'time_minutes', 'set_type'
     ])
     
     # Write data rows
@@ -1382,6 +1412,7 @@ def export_workout_logs():
             log.set_number,
             log.reps if log.reps is not None else '',
             log.weight if log.weight is not None else '',
+            log.bodyweight_kg if log.bodyweight_kg is not None else '',
             log.calories if log.calories is not None else '',
             log.time_minutes if log.time_minutes is not None else '',
             log.set_type
@@ -1618,7 +1649,28 @@ def migrate_schema():
         # In Railway, just fill in "flask migrate-schema" as the command in the pre-deploy step and it will run this migration before deploying the new code with the updated model
         # Or add your migration script to \scripts and then use python \scripts\migrate_PLACEHOLDER to run it against your database URL directly for more complex migrations.
 
-        
+        # Migrate workout_logs table
+        if db_type == 'sqlite':
+            result = db.session.execute(text("PRAGMA table_info(workout_logs)")).fetchall()
+            workout_log_columns = [row[1] for row in result]
+        elif db_type == 'postgresql':
+            result = db.session.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'workout_logs'"
+            )).fetchall()
+            workout_log_columns = [row[0] for row in result]
+        else:
+            inspector = inspect(db.engine)
+            workout_log_columns = [col['name'] for col in inspector.get_columns('workout_logs')]
+
+        if 'bodyweight_kg' not in workout_log_columns:
+            db.session.execute(text(
+                "ALTER TABLE workout_logs ADD COLUMN bodyweight_kg FLOAT DEFAULT NULL"
+            ))
+            db.session.commit()
+            print('✓ Added bodyweight_kg column to workout_logs')
+        else:
+            print('  bodyweight_kg already exists in workout_logs')
         
     except Exception as e:
         db.session.rollback()
