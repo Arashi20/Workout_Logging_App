@@ -101,8 +101,10 @@ init_app()
 
 def effective_volume(log):
     """Return effective volume for a set, accounting for bodyweight exercises."""
+    if log.reps is None:
+        return 0
     weight = (log.bodyweight_kg or 0) + (log.weight or 0)
-    return weight * (log.reps or 0)
+    return weight * log.reps
 
 @app.route('/')
 def index():
@@ -1003,7 +1005,8 @@ def _build_session_data_for_exercise(exercise_id, user_id):
     session_data_dict = {}
     for log, session in logs:
         date = session.start_time.strftime('%Y-%m-%d')
-        estimated_1rm = log.weight * (1 + log.reps / 30)
+        effective_weight = (log.bodyweight_kg or 0) + log.weight
+        estimated_1rm = effective_weight * (1 + log.reps / 30)
         volume = effective_volume(log)
         if date not in session_data_dict:
             session_data_dict[date] = {'max_1rm': estimated_1rm, 'total_volume': volume}
@@ -1087,7 +1090,8 @@ def exercise_detail(exercise_id):
         
         if log.weight and log.reps:
             # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
-            estimated_1rm = round(log.weight * (1 + log.reps / 30), 1)
+            effective_weight = (log.bodyweight_kg or 0) + log.weight
+            estimated_1rm = round(effective_weight * (1 + log.reps / 30), 1)
             volume = round(effective_volume(log), 1)
             
             # Track best max weight per session date for progression chart
