@@ -56,6 +56,7 @@ class WorkoutLog(db.Model):
     set_number = db.Column(db.Integer, nullable=False)
     reps = db.Column(db.Integer, nullable=True)  # NULL for cardio exercises
     weight = db.Column(db.Float, nullable=True)  # NULL for cardio exercises
+    bodyweight_kg = db.Column(db.Float, nullable=True, default=None)  # NULL for non-bodyweight exercises
     calories = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
     time_minutes = db.Column(db.Float, nullable=True)  # NULL for non-cardio exercises
     set_type = db.Column(db.String(20), default='working')  # 'warmup' or 'working'
