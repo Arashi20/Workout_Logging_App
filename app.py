@@ -1088,28 +1088,28 @@ def exercise_detail(exercise_id):
     for log, session in workout_logs:
         session_date = session.start_time.strftime('%Y-%m-%d')
         
-        if log.weight and log.reps:
+        effective_weight = (log.bodyweight_kg or 0) + (log.weight or 0)
+        if log.reps and effective_weight:
             # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
-            effective_weight = (log.bodyweight_kg or 0) + log.weight
             estimated_1rm = round(effective_weight * (1 + log.reps / 30), 1)
             volume = round(effective_volume(log), 1)
             
             # Track best max weight per session date for progression chart
             if session_date not in session_dates:
                 session_dates[session_date] = {
-                    'max_weight': round(log.weight, 1),
+                    'max_weight': round(effective_weight, 1),
                     'total_volume': volume,
                     'estimated_1rm': estimated_1rm
                 }
             else:
-                session_dates[session_date]['max_weight'] = round(max(session_dates[session_date]['max_weight'], log.weight), 1)
+                session_dates[session_date]['max_weight'] = round(max(session_dates[session_date]['max_weight'], effective_weight), 1)
                 session_dates[session_date]['total_volume'] = round(session_dates[session_date]['total_volume'] + volume, 1)
                 session_dates[session_date]['estimated_1rm'] = round(max(session_dates[session_date]['estimated_1rm'], estimated_1rm), 1)
             
             # Track best sets by different criteria
             if not best_sets['1rm'] or estimated_1rm > best_sets['1rm']['estimated_1rm']:
                 best_sets['1rm'] = {
-                    'weight': round(log.weight, 1),
+                    'weight': round(effective_weight, 1),
                     'reps': log.reps,
                     'estimated_1rm': estimated_1rm,
                     'date': session.start_time
@@ -1117,9 +1117,9 @@ def exercise_detail(exercise_id):
             
             # Best 10-rep set
             if log.reps >= 10:
-                if not best_sets['10rm'] or log.weight > best_sets['10rm']['weight']:
+                if not best_sets['10rm'] or effective_weight > best_sets['10rm']['weight']:
                     best_sets['10rm'] = {
-                        'weight': round(log.weight, 1),
+                        'weight': round(effective_weight, 1),
                         'reps': log.reps,
                         'date': session.start_time
                     }
