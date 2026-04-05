@@ -488,13 +488,6 @@ function generateWorkoutImage(data) {
             ctx.fillText(data.timeRange + '   ·   ' + data.duration + ' min', W / 2, y);
             y += 64;
 
-            // Stats row with warm tinted pill background
-            var statsRowH = 110;
-            var statsRowY = y - 18;
-            ctx.fillStyle = '#EDE6D8';
-            drawRoundRect(80, statsRowY, W - 160, statsRowH, 16);
-            ctx.fill();
-
             var stats = [
                 { label: 'EXERCISES', value: String(data.exercises) },
                 { label: 'WORKING SETS', value: String(data.sets) },
