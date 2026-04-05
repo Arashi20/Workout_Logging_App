@@ -727,18 +727,29 @@ def history():
         # Count total sets (working sets only)
         total_sets = sum(1 for log in logs if log.set_type == 'working')
         
-        # Get exercise breakdown
+        # Get exercise breakdown (working sets only, for history page display)
         exercise_breakdown = defaultdict(int)
         for log in logs:
             if log.set_type == 'working':
                 exercise_breakdown[log.exercise.name] += 1
-        
+
+        # Build ordered exercise list for share card (all sets including warmup,
+        # in chronological order of first appearance)
+        exercise_order = []
+        exercise_all_sets = defaultdict(int)
+        for log in logs:
+            if log.exercise.name not in exercise_all_sets:
+                exercise_order.append(log.exercise.name)
+            exercise_all_sets[log.exercise.name] += 1
+        exercise_list_share = [[name, exercise_all_sets[name]] for name in exercise_order]
+
         session_data.append({
             'session': session,
             'total_volume': round(total_volume, 1),
             'unique_exercises': unique_exercises,
             'total_sets': total_sets,
-            'exercise_breakdown': dict(exercise_breakdown)
+            'exercise_breakdown': dict(exercise_breakdown),
+            'exercise_list_share': exercise_list_share
         })
     
     return render_template('history.html', 

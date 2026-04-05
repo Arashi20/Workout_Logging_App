@@ -75,7 +75,7 @@
              data-volume="{{ data.total_volume }}"
              data-exercises="{{ data.unique_exercises }}"
              data-sets="{{ data.total_sets }}"
-             data-exercise-list='{{ data.exercise_breakdown | tojson }}'>
+             data-exercise-list='{{ data.exercise_list_share | tojson }}'>
             <div class="history-header">
                 <div class="history-date">
                     <h3>{{ data.session.start_time.strftime('%B %d, %Y') }}</h3>
@@ -467,26 +467,31 @@ function generateWorkoutImage(data) {
             ctx.fillText('W O R K O U T   C O M P L E T E', W / 2, y);
             y += 52;
 
+            // Warm cream background for middle section (date + time + stats, between dividers)
+            var midSectionH = 48 + 42 + 64 + 110 + 28;
+            ctx.fillStyle = '#F8F3E8';
+            ctx.fillRect(0, y, W, midSectionH);
+
             // Gradient divider
             drawGradientDivider(y);
             y += 48;
 
             // Date
             ctx.fillStyle = '#0d1b2a';
-            ctx.font = 'bold 36px Arial, sans-serif';
+            ctx.font = 'bold 36px "Times New Roman", Times, serif';
             ctx.fillText(data.date, W / 2, y);
             y += 42;
 
             // Time range + duration
             ctx.fillStyle = '#A0AEC0';
-            ctx.font = '26px Arial, sans-serif';
+            ctx.font = '26px "Times New Roman", Times, serif';
             ctx.fillText(data.timeRange + '   ·   ' + data.duration + ' min', W / 2, y);
             y += 64;
 
-            // Stats row with light pill background
+            // Stats row with warm tinted pill background
             var statsRowH = 110;
             var statsRowY = y - 18;
-            ctx.fillStyle = '#F7FAFC';
+            ctx.fillStyle = '#EDE6D8';
             drawRoundRect(80, statsRowY, W - 160, statsRowH, 16);
             ctx.fill();
 
@@ -499,7 +504,7 @@ function generateWorkoutImage(data) {
             stats.forEach(function(s, i) {
                 var cx = colW * i + colW / 2;
                 ctx.fillStyle = '#0d1b2a';
-                ctx.font = 'bold 56px Arial, sans-serif';
+                ctx.font = 'bold 56px "Times New Roman", Times, serif';
                 ctx.fillText(s.value, cx, y + 46);
                 ctx.fillStyle = '#A0AEC0';
                 ctx.font = 'bold 18px Arial, sans-serif';
@@ -521,13 +526,13 @@ function generateWorkoutImage(data) {
             var shown = data.exerciseList.slice(0, 7);
             shown.forEach(function(ex) {
                 ctx.fillStyle = '#0d1b2a';
-                ctx.font = '28px Arial, sans-serif';
+                ctx.font = '28px "Times New Roman", Times, serif';
                 ctx.fillText(ex, W / 2, y);
                 y += 42;
             });
             if (data.exerciseList.length > 7) {
                 ctx.fillStyle = '#A0AEC0';
-                ctx.font = '24px Arial, sans-serif';
+                ctx.font = '24px "Times New Roman", Times, serif';
                 ctx.fillText('+ ' + (data.exerciseList.length - 7) + ' more', W / 2, y);
             }
 
@@ -579,8 +584,8 @@ async function shareWorkout(btn) {
     var volume = card.dataset.volume;
     var exercises = card.dataset.exercises;
     var sets = card.dataset.sets;
-    var exerciseBreakdown = JSON.parse(card.dataset.exerciseList);
-    var exerciseList = Object.entries(exerciseBreakdown).map(function(e) {
+    var exerciseListRaw = JSON.parse(card.dataset.exerciseList);
+    var exerciseList = exerciseListRaw.map(function(e) {
         return e[0] + ' (' + e[1] + ' set' + (e[1] !== 1 ? 's' : '') + ')';
     });
 
