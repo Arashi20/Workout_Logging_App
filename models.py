@@ -23,6 +23,8 @@ class User(UserMixin, db.Model):
     prs = db.relationship('PersonalRecord', backref='user', lazy=True, cascade='all, delete-orphan')
     weight_logs = db.relationship('WeightLog', backref='user', lazy=True, cascade='all, delete-orphan')
     bloodwork_logs = db.relationship('BloodworkLog', backref='user', lazy=True, cascade='all, delete-orphan')
+    food_presets = db.relationship('FoodPreset', backref='user', lazy=True, cascade='all, delete-orphan')
+    protein_logs = db.relationship('ProteinLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Exercise(db.Model):
     __tablename__ = 'exercises'
@@ -152,3 +154,21 @@ class BloodworkLog(db.Model):
         range_span = ref_range['max'] - ref_range['min']
         percentage = ((value - ref_range['min']) / range_span) * 100
         return round(percentage, 1)
+
+class FoodPreset(db.Model):
+    __tablename__ = 'food_presets'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    protein_per_serving = db.Column(db.Float, nullable=False)
+    serving_unit = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
+
+class ProteinLog(db.Model):
+    __tablename__ = 'protein_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    food_name = db.Column(db.String(100), nullable=False)
+    protein_g = db.Column(db.Float, nullable=False)
+    logged_at = db.Column(db.DateTime, default=now_amsterdam, index=True)
+    preset_id = db.Column(db.Integer, db.ForeignKey('food_presets.id'), nullable=True)
