@@ -1068,11 +1068,11 @@ def exercise_detail(exercise_id):
         WorkoutLog.set_type == 'working'  # Only count working sets
     ).order_by(WorkoutSession.start_time).all()
     
-    # Get current PR for this exercise
+    # Get current PR for this exercise (highest id = most recently set, which is always the best)
     current_pr = PersonalRecord.query.filter_by(
         user_id=current_user.id,
         exercise_id=exercise_id
-    ).first()
+    ).order_by(PersonalRecord.id.desc()).first()
     
     # Calculate performance metrics
     performance_data = []
