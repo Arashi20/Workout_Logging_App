@@ -10,7 +10,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -1404,6 +1404,196 @@ def programs():
     return render_template('programs.html', programs=WORKOUT_PROGRAMS)
 
 
+@app.route('/nutrition')
+@login_required
+def nutrition():
+    """Main nutrition / protein tracking page."""
+    today = now_amsterdam().date()
+    today_start = datetime(today.year, today.month, today.day)
+    today_end = today_start + timedelta(days=1)
+
+    today_logs = ProteinLog.query.filter(
+        ProteinLog.user_id == current_user.id,
+        ProteinLog.logged_at >= today_start,
+        ProteinLog.logged_at < today_end
+    ).order_by(ProteinLog.logged_at.desc()).all()
+
+    today_total_g = sum(log.protein_g for log in today_logs)
+    protein_target = 140
+    progress_pct = min(today_total_g / protein_target * 100, 100)
+
+    presets = FoodPreset.query.filter_by(user_id=current_user.id).order_by(FoodPreset.name).all()
+
+    # Weekly summary: last 7 days grouped by date
+    week_start = datetime(today.year, today.month, today.day) - timedelta(days=6)
+    week_logs = ProteinLog.query.filter(
+        ProteinLog.user_id == current_user.id,
+        ProteinLog.logged_at >= week_start
+    ).all()
+
+    weekly_totals = defaultdict(float)
+    for log in week_logs:
+        day = log.logged_at.date()
+        weekly_totals[day] += log.protein_g
+
+    weekly_summary = []
+    for i in range(7):
+        day = today - timedelta(days=6 - i)
+        weekly_summary.append({'date': day, 'total_g': round(weekly_totals.get(day, 0), 1)})
+
+    return render_template(
+        'nutrition.html',
+        today_logs=today_logs,
+        today_total_g=round(today_total_g, 1),
+        progress_pct=round(progress_pct, 1),
+        presets=presets,
+        weekly_summary=weekly_summary,
+        protein_target=protein_target
+    )
+
+
+@app.route('/nutrition/log', methods=['POST'])
+@login_required
+def nutrition_log():
+    """Log a protein entry."""
+    food_name = request.form.get('food_name', '').strip()
+    protein_g_str = request.form.get('protein_g', '').strip()
+    preset_id_str = request.form.get('preset_id', '').strip()
+
+    if not food_name:
+        flash('Food name is required.', 'error')
+        return redirect(url_for('nutrition'))
+    if len(food_name) > 100:
+        flash('Food name must be 100 characters or fewer.', 'error')
+        return redirect(url_for('nutrition'))
+
+    try:
+        protein_g = float(protein_g_str)
+    except (ValueError, TypeError):
+        flash('Please enter a valid protein amount.', 'error')
+        return redirect(url_for('nutrition'))
+
+    if not (1 <= protein_g <= 300):
+        flash('Protein amount must be between 1 and 300 grams.', 'error')
+        return redirect(url_for('nutrition'))
+
+    preset_id = None
+    if preset_id_str:
+        try:
+            preset_id = int(preset_id_str)
+        except (ValueError, TypeError):
+            preset_id = None
+
+    try:
+        entry = ProteinLog(
+            user_id=current_user.id,
+            food_name=food_name,
+            protein_g=protein_g,
+            preset_id=preset_id
+        )
+        db.session.add(entry)
+        db.session.commit()
+        flash(f'Logged {protein_g}g protein from {food_name}.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Error logging protein: {str(e)}')
+        flash('Error saving protein entry.', 'error')
+
+    return redirect(url_for('nutrition'))
+
+
+@app.route('/nutrition/presets/add', methods=['POST'])
+@login_required
+def nutrition_preset_add():
+    """Add a food preset."""
+    name = request.form.get('name', '').strip()
+    protein_str = request.form.get('protein_per_serving', '').strip()
+    serving_unit = request.form.get('serving_unit', '').strip() or None
+
+    if not name:
+        flash('Preset name is required.', 'error')
+        return redirect(url_for('nutrition'))
+
+    try:
+        protein_per_serving = float(protein_str)
+    except (ValueError, TypeError):
+        flash('Please enter a valid protein amount per serving.', 'error')
+        return redirect(url_for('nutrition'))
+
+    if not (1 <= protein_per_serving <= 300):
+        flash('Protein per serving must be between 1 and 300 grams.', 'error')
+        return redirect(url_for('nutrition'))
+
+    existing = FoodPreset.query.filter_by(user_id=current_user.id, name=name).first()
+    if existing:
+        flash(f'A preset named "{name}" already exists.', 'error')
+        return redirect(url_for('nutrition'))
+
+    try:
+        preset = FoodPreset(
+            user_id=current_user.id,
+            name=name,
+            protein_per_serving=protein_per_serving,
+            serving_unit=serving_unit
+        )
+        db.session.add(preset)
+        db.session.commit()
+        flash(f'Preset "{name}" added.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Error adding preset: {str(e)}')
+        flash('Error saving preset.', 'error')
+
+    return redirect(url_for('nutrition'))
+
+
+@app.route('/nutrition/presets/delete/<int:preset_id>', methods=['POST'])
+@login_required
+def nutrition_preset_delete(preset_id):
+    """Delete a food preset."""
+    preset = FoodPreset.query.filter_by(id=preset_id, user_id=current_user.id).first()
+    if not preset:
+        flash('Preset not found.', 'error')
+        return redirect(url_for('nutrition'))
+
+    try:
+        db.session.delete(preset)
+        db.session.commit()
+        flash(f'Preset "{preset.name}" deleted.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Error deleting preset: {str(e)}')
+        flash('Error deleting preset.', 'error')
+
+    return redirect(url_for('nutrition'))
+
+
+@app.route('/nutrition/log/delete/<int:log_id>', methods=['POST'])
+@login_required
+def nutrition_log_delete(log_id):
+    """Delete a logged protein entry (today's entries only)."""
+    entry = ProteinLog.query.filter_by(id=log_id, user_id=current_user.id).first()
+    if not entry:
+        flash('Log entry not found.', 'error')
+        return redirect(url_for('nutrition'))
+
+    today = now_amsterdam().date()
+    if entry.logged_at.date() != today:
+        flash('Only today\'s entries can be deleted.', 'error')
+        return redirect(url_for('nutrition'))
+
+    try:
+        db.session.delete(entry)
+        db.session.commit()
+        flash('Entry deleted.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Error deleting protein log: {str(e)}')
+        flash('Error deleting entry.', 'error')
+
+    return redirect(url_for('nutrition'))
+
+
 @app.route('/export/workout-logs')
 @login_required
 def export_workout_logs():
@@ -1591,7 +1781,36 @@ def export_bloodwork_logs():
     )
 
 
-#When running the app in development mode run the following commands 
+@app.route('/export/protein-logs')
+@login_required
+def export_protein_logs():
+    """Export protein log data as CSV"""
+    logs = ProteinLog.query.filter_by(user_id=current_user.id).order_by(ProteinLog.logged_at.desc()).all()
+
+    si = StringIO()
+    writer = csv.writer(si)
+
+    writer.writerow(['log_date', 'food_name', 'protein_g', 'preset_id'])
+
+    for log in logs:
+        writer.writerow([
+            log.logged_at.strftime('%Y-%m-%d %H:%M:%S'),
+            log.food_name,
+            log.protein_g,
+            log.preset_id if log.preset_id else ''
+        ])
+
+    output = si.getvalue()
+    si.close()
+
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=protein_logs_{now_amsterdam().strftime("%Y%m%d")}.csv'}
+    )
+
+
+
 #In your terminal:
 # flask init-db          # Initialize database tables (creates tables if they don't exist)
 # flask create-admin     # Create admin user
@@ -1710,7 +1929,63 @@ def migrate_schema():
             print('✓ Added bodyweight_kg column to workout_logs')
         else:
             print('  bodyweight_kg already exists in workout_logs')
-        
+
+        # Create food_presets table if missing
+        if db_type == 'postgresql':
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS food_presets (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    name VARCHAR(100) NOT NULL,
+                    protein_per_serving FLOAT NOT NULL,
+                    serving_unit VARCHAR(50),
+                    created_at TIMESTAMP
+                )
+            """))
+            db.session.commit()
+            print('✓ Ensured food_presets table exists')
+        else:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS food_presets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    name VARCHAR(100) NOT NULL,
+                    protein_per_serving FLOAT NOT NULL,
+                    serving_unit VARCHAR(50),
+                    created_at TIMESTAMP
+                )
+            """))
+            db.session.commit()
+            print('✓ Ensured food_presets table exists')
+
+        # Create protein_logs table if missing
+        if db_type == 'postgresql':
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS protein_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    food_name VARCHAR(100) NOT NULL,
+                    protein_g FLOAT NOT NULL,
+                    logged_at TIMESTAMP,
+                    preset_id INTEGER REFERENCES food_presets(id)
+                )
+            """))
+            db.session.commit()
+            print('✓ Ensured protein_logs table exists')
+        else:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS protein_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    food_name VARCHAR(100) NOT NULL,
+                    protein_g FLOAT NOT NULL,
+                    logged_at TIMESTAMP,
+                    preset_id INTEGER REFERENCES food_presets(id)
+                )
+            """))
+            db.session.commit()
+            print('✓ Ensured protein_logs table exists')
+
     except Exception as e:
         db.session.rollback()
         db_info = f' ({db_type})' if db_type else ''

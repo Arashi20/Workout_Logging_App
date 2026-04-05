@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Nutrition - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="weight-tracker-container">
+    <h1>Protein Tracker</h1>
+
+    <!-- Section 1: Daily Progress -->
+    <div class="add-weight-card">
+        <h2>Today's Progress</h2>
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <span style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary);">{{ today_total_g }}g</span>
+            <span style="font-size: 1.5rem; color: var(--text-secondary);"> / {{ protein_target }}g</span>
+        </div>
+        <div style="background: var(--bg-color); border-radius: 8px; height: 18px; overflow: hidden; margin-bottom: 1.2rem;">
+            <div style="height: 100%; width: {{ progress_pct }}%; border-radius: 8px; transition: width 0.4s ease;
+                background-color: {% if progress_pct >= 100 %}var(--success-color){% elif progress_pct >= 60 %}var(--warning-color){% else %}var(--danger-color){% endif %};"></div>
+        </div>
+
+        {% if today_logs %}
+        <div class="logs-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Food</th>
+                        <th>Protein</th>
+                        <th>Time</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in today_logs %}
+                    <tr>
+                        <td>{{ log.food_name }}</td>
+                        <td>{{ log.protein_g }}g</td>
+                        <td>{{ log.logged_at.strftime('%H:%M') }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('nutrition_log_delete', log_id=log.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--text-secondary); text-align: center;">No protein logged today yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: Quick Log Form -->
+    <div class="add-weight-card">
+        <h2>Log Protein</h2>
+        <form method="POST" action="{{ url_for('nutrition_log') }}" class="weight-form">
+            <div class="form-row">
+                {% if presets %}
+                <div class="form-group">
+                    <label for="preset_select">Preset (optional)</label>
+                    <select id="preset_select" name="preset_id" class="form-control">
+                        <option value="">— select preset —</option>
+                        {% for p in presets %}
+                        <option value="{{ p.id }}" data-name="{{ p.name }}" data-protein="{{ p.protein_per_serving }}">
+                            {{ p.name }} ({{ p.protein_per_serving }}g{% if p.serving_unit %} / {{ p.serving_unit }}{% endif %})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="food_name">Food name</label>
+                    <input type="text" id="food_name" name="food_name" maxlength="100" placeholder="e.g. Chicken Breast" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="protein_g">Protein (g)</label>
+                    <input type="number" id="protein_g" name="protein_g" step="0.1" min="1" max="300" placeholder="e.g. 30" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Log protein</button>
+        </form>
+    </div>
+
+    <!-- Section 3: Presets Management -->
+    <div class="add-weight-card">
+        <h2>Food Presets</h2>
+
+        {% if presets %}
+        <div class="logs-table" style="margin-bottom: 1.5rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Protein/serving</th>
+                        <th>Unit</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presets %}
+                    <tr>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.protein_per_serving }}g</td>
+                        <td>{{ p.serving_unit if p.serving_unit else '—' }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('nutrition_preset_delete', preset_id=p.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--text-secondary);">No presets yet. Add one below.</p>
+        {% endif %}
+
+        <h3 style="margin-bottom: 0.8rem;">Add Preset</h3>
+        <form method="POST" action="{{ url_for('nutrition_preset_add') }}" class="weight-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="preset_name">Name</label>
+                    <input type="text" id="preset_name" name="name" maxlength="100" placeholder="e.g. Greek Yogurt" required>
+                </div>
+                <div class="form-group">
+                    <label for="preset_protein">Protein/serving (g)</label>
+                    <input type="number" id="preset_protein" name="protein_per_serving" step="0.1" min="1" max="300" placeholder="e.g. 17" required>
+                </div>
+                <div class="form-group">
+                    <label for="preset_unit">Serving unit (optional)</label>
+                    <input type="text" id="preset_unit" name="serving_unit" maxlength="50" placeholder="e.g. 100g, 1 cup">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success">Add preset</button>
+        </form>
+    </div>
+
+    <!-- Section 4: Weekly Summary -->
+    <div class="add-weight-card">
+        <h2>Weekly Summary</h2>
+        <div class="logs-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Protein</th>
+                        <th>Target</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in weekly_summary %}
+                    <tr {% if day.total_g >= protein_target %}style="background: rgba(76, 175, 80, 0.1);"{% endif %}>
+                        <td>{{ day.date.strftime('%a %d %b') }}</td>
+                        <td style="font-weight: {% if day.total_g >= protein_target %}700{% else %}400{% endif %}; color: {% if day.total_g >= protein_target %}var(--success-color){% else %}var(--text-primary){% endif %};">
+                            {{ day.total_g }}g
+                        </td>
+                        <td>
+                            {% if day.total_g >= protein_target %}
+                            <span style="color: var(--success-color);">✓ Hit</span>
+                            {% else %}
+                            <span style="color: var(--text-secondary);">{{ protein_target }}g</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p style="margin-top: 1rem;">
+            <a href="{{ url_for('export_protein_logs') }}" class="btn btn-primary" style="font-size: 0.9rem;">Export CSV</a>
+        </p>
+    </div>
+</div>
+
+{% if presets %}
+<script>
+    document.getElementById('preset_select').addEventListener('change', function () {
+        const option = this.options[this.selectedIndex];
+        const name = option.getAttribute('data-name');
+        const protein = option.getAttribute('data-protein');
+        if (name) {
+            document.getElementById('food_name').value = name;
+            document.getElementById('protein_g').value = protein;
+        } else {
+            document.getElementById('food_name').value = '';
+            document.getElementById('protein_g').value = '';
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
