@@ -54,7 +54,8 @@
         {% endif %}
     </div>
 
-    <!-- Plateau Detection Card -->
+    {% if not exercise.is_cardio %}
+    <!-- Plateau Detection Card (weighted exercises only) -->
     {% if plateau_info.status != 'insufficient_data' %}
     <div class="plateau-detail-card plateau-detail-{{ plateau_info.status }}">
         <div class="plateau-detail-header">
@@ -140,6 +141,24 @@
         <p>No workout data yet for this exercise. Start logging workouts to see performance analytics!</p>
     </div>
     {% endif %}
+
+    {% else %}
+    <!-- Cardio Charts -->
+    {% if cardio_data %}
+    <div class="chart-section">
+        <h2>Duration Over Time</h2>
+        <canvas id="cardioTimeChart"></canvas>
+    </div>
+    <div class="chart-section">
+        <h2>Calories Over Time</h2>
+        <canvas id="cardioCalChart"></canvas>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No workout data yet for this exercise. Start logging workouts to see performance analytics!</p>
+    </div>
+    {% endif %}
+    {% endif %}
 </div>
 
 {% if performance_data %}
@@ -148,7 +167,7 @@
     // Weight Progression Chart
     const weightCtx = document.getElementById('weightProgressionChart').getContext('2d');
     const weightData = {{ performance_data | tojson }};
-    
+
     new Chart(weightCtx, {
         type: 'line',
         data: {
@@ -214,7 +233,7 @@
     // Volume Progression Chart
     const volumeCtx = document.getElementById('volumeProgressionChart').getContext('2d');
     const volumeData = {{ volume_data | tojson }};
-    
+
     new Chart(volumeCtx, {
         type: 'bar',
         data: {
@@ -257,6 +276,80 @@
                         text: 'Date'
                     }
                 }
+            }
+        }
+    });
+</script>
+{% endif %}
+
+{% if cardio_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    const cardioData = {{ cardio_data | tojson }};
+
+    // Duration Chart
+    new Chart(document.getElementById('cardioTimeChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: cardioData.map(d => d.date),
+            datasets: [{
+                label: 'Duration (min)',
+                data: cardioData.map(d => d.time_minutes),
+                backgroundColor: '#2196F3',
+                borderColor: '#1976D2',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Duration: ' + context.parsed.y.toFixed(1) + ' min';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Duration (min)' } },
+                x: { title: { display: true, text: 'Date' } }
+            }
+        }
+    });
+
+    // Calories Chart
+    new Chart(document.getElementById('cardioCalChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: cardioData.map(d => d.date),
+            datasets: [{
+                label: 'Calories Burned',
+                data: cardioData.map(d => d.calories),
+                borderColor: '#FF5722',
+                backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Calories: ' + context.parsed.y.toFixed(0) + ' cal';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Calories' } },
+                x: { title: { display: true, text: 'Date' } }
             }
         }
     });

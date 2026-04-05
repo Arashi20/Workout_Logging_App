@@ -1088,65 +1088,88 @@ def exercise_detail(exercise_id):
     # Calculate performance metrics
     performance_data = []
     volume_data = []
+    cardio_data = []
     best_sets = {
         '1rm': None,
         '10rm': None
     }
-    
+
     # Track dates seen to aggregate by session date
     session_dates = {}
-    
-    for log, session in workout_logs:
-        session_date = session.start_time.strftime('%Y-%m-%d')
-        
-        effective_weight = (log.bodyweight_kg or 0) + (log.weight or 0)
-        if log.reps and effective_weight:
-            # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
-            estimated_1rm = round(effective_weight * (1 + log.reps / 30), 1)
-            volume = round(effective_volume(log), 1)
-            
-            # Track best max weight per session date for progression chart
-            if session_date not in session_dates:
-                session_dates[session_date] = {
-                    'max_weight': round(effective_weight, 1),
-                    'total_volume': volume,
-                    'estimated_1rm': estimated_1rm
-                }
+
+    if exercise.is_cardio:
+        # Aggregate cardio data per session date
+        cardio_dates: dict[str, dict[str, float]] = {}
+        for log, session in workout_logs:
+            session_date = session.start_time.strftime('%Y-%m-%d')
+            calories = log.calories or 0
+            time_min = log.time_minutes or 0
+            if session_date not in cardio_dates:
+                cardio_dates[session_date] = {'calories': calories, 'time_minutes': time_min}
             else:
-                session_dates[session_date]['max_weight'] = round(max(session_dates[session_date]['max_weight'], effective_weight), 1)
-                session_dates[session_date]['total_volume'] = round(session_dates[session_date]['total_volume'] + volume, 1)
-                session_dates[session_date]['estimated_1rm'] = round(max(session_dates[session_date]['estimated_1rm'], estimated_1rm), 1)
-            
-            # Track best sets by different criteria
-            if not best_sets['1rm'] or estimated_1rm > best_sets['1rm']['estimated_1rm']:
-                best_sets['1rm'] = {
-                    'weight': round(effective_weight, 1),
-                    'reps': log.reps,
-                    'estimated_1rm': estimated_1rm,
-                    'date': session.start_time
-                }
-            
-            # Best 10-rep set
-            if log.reps >= 10:
-                if not best_sets['10rm'] or effective_weight > best_sets['10rm']['weight']:
-                    best_sets['10rm'] = {
+                cardio_dates[session_date]['calories'] = round(cardio_dates[session_date]['calories'] + calories, 1)
+                cardio_dates[session_date]['time_minutes'] = round(cardio_dates[session_date]['time_minutes'] + time_min, 1)
+        for date in sorted(cardio_dates.keys()):
+            entry = cardio_dates[date]
+            cal_per_min = round(entry['calories'] / entry['time_minutes'], 1) if entry['time_minutes'] else None
+            cardio_data.append({
+                'date': date,
+                'calories': entry['calories'],
+                'time_minutes': entry['time_minutes'],
+                'cal_per_min': cal_per_min
+            })
+    else:
+        for log, session in workout_logs:
+            session_date = session.start_time.strftime('%Y-%m-%d')
+
+            effective_weight = (log.bodyweight_kg or 0) + (log.weight or 0)
+            if log.reps and effective_weight:
+                # Calculate estimated 1RM using Epley formula: weight * (1 + reps/30)
+                estimated_1rm = round(effective_weight * (1 + log.reps / 30), 1)
+                volume = round(effective_volume(log), 1)
+
+                # Track best max weight per session date for progression chart
+                if session_date not in session_dates:
+                    session_dates[session_date] = {
+                        'max_weight': round(effective_weight, 1),
+                        'total_volume': volume,
+                        'estimated_1rm': estimated_1rm
+                    }
+                else:
+                    session_dates[session_date]['max_weight'] = round(max(session_dates[session_date]['max_weight'], effective_weight), 1)
+                    session_dates[session_date]['total_volume'] = round(session_dates[session_date]['total_volume'] + volume, 1)
+                    session_dates[session_date]['estimated_1rm'] = round(max(session_dates[session_date]['estimated_1rm'], estimated_1rm), 1)
+
+                # Track best sets by different criteria
+                if not best_sets['1rm'] or estimated_1rm > best_sets['1rm']['estimated_1rm']:
+                    best_sets['1rm'] = {
                         'weight': round(effective_weight, 1),
                         'reps': log.reps,
+                        'estimated_1rm': estimated_1rm,
                         'date': session.start_time
                     }
-    
-    # Convert session data to sorted lists for charts
-    sorted_dates = sorted(session_dates.keys())
-    for date in sorted_dates:
-        performance_data.append({
-            'date': date,
-            'weight': session_dates[date]['max_weight'],
-            'estimated_1rm': session_dates[date]['estimated_1rm']
-        })
-        volume_data.append({
-            'date': date,
-            'volume': session_dates[date]['total_volume']
-        })
+
+                # Best 10-rep set
+                if log.reps >= 10:
+                    if not best_sets['10rm'] or effective_weight > best_sets['10rm']['weight']:
+                        best_sets['10rm'] = {
+                            'weight': round(effective_weight, 1),
+                            'reps': log.reps,
+                            'date': session.start_time
+                        }
+
+        # Convert session data to sorted lists for charts
+        sorted_dates = sorted(session_dates.keys())
+        for date in sorted_dates:
+            performance_data.append({
+                'date': date,
+                'weight': session_dates[date]['max_weight'],
+                'estimated_1rm': session_dates[date]['estimated_1rm']
+            })
+            volume_data.append({
+                'date': date,
+                'volume': session_dates[date]['total_volume']
+            })
     
     # Calculate total statistics
     total_sets = len(workout_logs)
@@ -1161,6 +1184,7 @@ def exercise_detail(exercise_id):
         exercise=exercise,
         performance_data=performance_data,
         volume_data=volume_data,
+        cardio_data=cardio_data,
         best_sets=best_sets,
         current_pr=current_pr,
         total_sets=total_sets,
