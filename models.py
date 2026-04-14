@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     bloodwork_logs = db.relationship('BloodworkLog', backref='user', lazy=True, cascade='all, delete-orphan')
     food_presets = db.relationship('FoodPreset', backref='user', lazy=True, cascade='all, delete-orphan')
     protein_logs = db.relationship('ProteinLog', backref='user', lazy=True, cascade='all, delete-orphan')
+    streak_logs = db.relationship('StreakLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Exercise(db.Model):
     __tablename__ = 'exercises'
@@ -172,3 +173,11 @@ class ProteinLog(db.Model):
     protein_g = db.Column(db.Float, nullable=False)
     logged_at = db.Column(db.DateTime, default=now_amsterdam, index=True)
     preset_id = db.Column(db.Integer, db.ForeignKey('food_presets.id'), nullable=True)
+
+class StreakLog(db.Model):
+    __tablename__ = 'streak_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    start_date = db.Column(db.DateTime, nullable=False, default=now_amsterdam)
+    end_date = db.Column(db.DateTime, nullable=True)   # NULL = ongoing streak
+    relapse_note = db.Column(db.Text, nullable=True)

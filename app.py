@@ -10,7 +10,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -1592,6 +1592,125 @@ def nutrition_log_delete(log_id):
         flash('Error deleting entry.', 'error')
 
     return redirect(url_for('nutrition'))
+
+
+@app.route('/discipline')
+@login_required
+def discipline():
+    """NoFap / NoPorn discipline tracker."""
+    logs = StreakLog.query.filter_by(user_id=current_user.id).order_by(StreakLog.start_date.desc()).all()
+    now = now_amsterdam()
+
+    active = next((l for l in logs if l.end_date is None), None)
+
+    if active:
+        delta = now - active.start_date
+        current_days = delta.days
+        start_str = active.start_date.strftime('%d %b %Y, %H:%M')
+    else:
+        current_days = 0
+        start_str = None
+
+    milestones = [
+        {'days': 1,   'name': 'First Blood',    'icon': '🩸'},
+        {'days': 3,   'name': 'Three Days',      'icon': '🔥'},
+        {'days': 7,   'name': 'One Week',         'icon': '⚡'},
+        {'days': 14,  'name': 'Two Weeks',        'icon': '💪'},
+        {'days': 30,  'name': 'The Month',        'icon': '🏆'},
+        {'days': 60,  'name': 'Two Months',       'icon': '🎯'},
+        {'days': 90,  'name': 'The Reboot',       'icon': '🧠'},
+        {'days': 180, 'name': 'Half Year',        'icon': '🌟'},
+        {'days': 365, 'name': 'Monk Mode',        'icon': '👑'},
+    ]
+    for m in milestones:
+        m['unlocked'] = current_days >= m['days']
+
+    benefits = [
+        {'days': 1,   'text': 'Urge cycle begins to break'},
+        {'days': 3,   'text': 'Dopamine receptors start resetting'},
+        {'days': 7,   'text': 'Testosterone surge ~145%'},
+        {'days': 14,  'text': 'Improved focus and mental clarity'},
+        {'days': 30,  'text': 'Neurological rewiring deepens'},
+        {'days': 60,  'text': 'Increased confidence and drive'},
+        {'days': 90,  'text': 'Full dopamine reboot complete'},
+        {'days': 180, 'text': 'New baseline — rewired for life'},
+    ]
+    for b in benefits:
+        b['unlocked'] = current_days >= b['days']
+
+    # Stats
+    completed = [l for l in logs if l.end_date is not None]
+    completed_days = [(l.end_date - l.start_date).days for l in completed]
+    all_days = completed_days + ([current_days] if active else [])
+    best_streak = max(all_days) if all_days else 0
+    total_clean = sum(completed_days) + current_days
+    total_attempts = len(logs)
+
+    # Progress ring toward next milestone
+    next_milestone = next((m for m in milestones if m['days'] > current_days), None)
+    if next_milestone:
+        idx = milestones.index(next_milestone)
+        prev_days = milestones[idx - 1]['days'] if idx > 0 else 0
+        span = next_milestone['days'] - prev_days
+        progress_pct = round(min(100.0, (current_days - prev_days) / span * 100), 1)
+    else:
+        progress_pct = 100.0
+
+    history = sorted(completed, key=lambda l: l.start_date, reverse=True)
+
+    return render_template('discipline.html',
+        active=active,
+        current_days=current_days,
+        start_str=start_str,
+        milestones=milestones,
+        benefits=benefits,
+        best_streak=best_streak,
+        total_clean=total_clean,
+        total_attempts=total_attempts,
+        progress_pct=progress_pct,
+        next_milestone=next_milestone,
+        history=history,
+    )
+
+
+@app.route('/discipline/start', methods=['POST'])
+@login_required
+def discipline_start():
+    """Start a new streak when none is active."""
+    active = StreakLog.query.filter_by(user_id=current_user.id, end_date=None).first()
+    if not active:
+        db.session.add(StreakLog(user_id=current_user.id, start_date=now_amsterdam()))
+        db.session.commit()
+        flash('Streak started. Stay strong.', 'success')
+    return redirect(url_for('discipline'))
+
+
+@app.route('/discipline/relapse', methods=['POST'])
+@login_required
+def discipline_relapse():
+    """Close current streak and start a new one."""
+    note = request.form.get('note', '').strip() or None
+    now = now_amsterdam()
+    active = StreakLog.query.filter_by(user_id=current_user.id, end_date=None).first()
+    if active:
+        active.end_date = now
+        active.relapse_note = note
+    db.session.add(StreakLog(user_id=current_user.id, start_date=now))
+    db.session.commit()
+    flash('Logged. Reset and keep going.', 'warning')
+    return redirect(url_for('discipline'))
+
+
+@app.route('/discipline/delete/<int:streak_id>', methods=['POST'])
+@login_required
+def discipline_delete(streak_id):
+    """Delete a past streak record."""
+    streak = StreakLog.query.filter_by(id=streak_id, user_id=current_user.id).first()
+    if streak:
+        db.session.delete(streak)
+        db.session.commit()
+        flash('Record deleted.', 'success')
+    return redirect(url_for('discipline'))
 
 
 @app.route('/export/workout-logs')

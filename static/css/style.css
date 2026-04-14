@@ -1997,3 +1997,292 @@ tr:hover {
         font-size: 1.5rem;
     }
 }
+
+/* ============================================================
+   DISCIPLINE PAGE
+   ============================================================ */
+
+.discipline-container {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.discipline-container h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+/* --- Hero card --- */
+.discipline-hero {
+    text-align: center;
+    padding: 2rem 1.5rem;
+}
+
+.streak-ring-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.streak-ring {
+    position: relative;
+    width: 180px;
+    height: 180px;
+}
+
+.ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: var(--border-color);
+    stroke-width: 10;
+}
+
+.ring-progress {
+    fill: none;
+    stroke: var(--accent-gold);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+}
+
+.ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ring-days {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+.ring-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.streak-since {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.streak-next {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.streak-next--gold {
+    color: var(--accent-gold);
+    font-weight: 600;
+}
+
+.no-streak-state {
+    padding: 1.5rem 0;
+}
+
+.no-streak-icon {
+    font-size: 3.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.no-streak-text {
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+}
+
+/* --- Stats grid --- */
+.discipline-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.discipline-stat-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
+}
+
+.discipline-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.discipline-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* --- Milestone badges --- */
+.milestone-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.milestone-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.85rem 0.5rem;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-color);
+    opacity: 0.45;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.milestone-badge.milestone-unlocked {
+    opacity: 1;
+    border-color: var(--accent-gold);
+    background: linear-gradient(135deg, var(--card-bg) 0%, color-mix(in srgb, var(--accent-gold) 8%, transparent) 100%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-gold) 30%, transparent);
+}
+
+.milestone-badge.milestone-unlocked:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.milestone-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.milestone-days {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.milestone-name {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* --- Benefits list --- */
+.benefit-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    opacity: 0.45;
+    transition: opacity 0.2s;
+}
+
+.benefit-item.benefit-unlocked {
+    opacity: 1;
+    background: color-mix(in srgb, var(--success-color) 8%, transparent);
+}
+
+.benefit-check {
+    font-size: 1rem;
+    font-weight: 700;
+    width: 1.25rem;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--success-color);
+}
+
+.benefit-item:not(.benefit-unlocked) .benefit-check {
+    color: var(--text-secondary);
+}
+
+.benefit-text {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+/* --- Relapse section --- */
+.discipline-relapse-section {
+    border-left: 3px solid var(--danger-color);
+}
+
+/* --- Modal --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    padding: 2rem;
+    width: 100%;
+    max-width: 460px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+    .discipline-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ring-days {
+        font-size: 2.4rem;
+    }
+
+    .milestone-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .modal-card {
+        padding: 1.5rem;
+    }
+}
