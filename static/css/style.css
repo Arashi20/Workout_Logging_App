@@ -1073,6 +1073,7 @@ tr:hover {
     .prs-container > h1:first-child,
     .weight-tracker-container > h1:first-child,
     .exercises-container > h1:first-child,
+    .discipline-container > h1:first-child,
     .programs-container .programs-header h1 {
         text-align: center;
     }
