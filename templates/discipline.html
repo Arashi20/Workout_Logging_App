@@ -172,4 +172,14 @@
 </div>
 {% endif %}
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('td.notes-cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+            });
+        });
+    });
+</script>
+
 {% endblock %}
