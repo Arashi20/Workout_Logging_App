@@ -126,7 +126,7 @@
                         <td>{{ s.start_date.strftime('%d %b %Y') }}</td>
                         <td>{{ s.end_date.strftime('%d %b %Y') }}</td>
                         <td>{{ (s.end_date - s.start_date).days }}</td>
-                        <td class="notes-cell">{{ s.relapse_note if s.relapse_note else '—' }}</td>
+                        <td class="notes-cell"><span class="notes-text">{{ s.relapse_note if s.relapse_note else '—' }}</span></td>
                         <td>
                             <button type="button" class="btn btn-danger delete-streak-btn"
                                 style="padding: 0.25rem 0.6rem; font-size: 0.8rem;"
