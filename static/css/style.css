@@ -1011,19 +1011,20 @@ td.notes-cell {
 @media (max-width: 768px) {
     td.notes-cell {
         max-width: 150px;
-        max-height: 60px;
-        overflow: hidden;
-        position: relative;
-        text-overflow: ellipsis;
+        cursor: pointer;
+    }
+
+    td.notes-cell .notes-text {
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
-        cursor: pointer;
+        overflow: hidden;
     }
-    
-    td.notes-cell.expanded {
-        max-height: none;
+
+    td.notes-cell.expanded .notes-text {
+        display: block;
         -webkit-line-clamp: unset;
+        overflow: visible;
     }
 }
 
