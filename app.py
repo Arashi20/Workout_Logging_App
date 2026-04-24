@@ -1394,6 +1394,318 @@ WORKOUT_PROGRAMS = [
             },
         ],
     },
+    {
+        'id': 'pplu-4day',
+        'name': 'Push / Pull / Legs / Upper – 4x per week',
+        'description': (
+            'A balanced 4-day split rotating Push, Pull, Legs, and a full Upper-body day. '
+            'Two rest days keep recovery solid while maintaining high enough frequency '
+            'to drive consistent progress across all muscle groups.'
+        ),
+        'days': [
+            {
+                'label': 'Day 1: Push + Core',
+                'avg_time': '~1h 5min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Pec Deck',                              'prescription': '3×10'},
+                    {'name': 'Bench Press',                           'prescription': '2×10'},
+                    {'name': 'Seated Shoulder Press',                 'prescription': '2×10'},
+                    {'name': 'Cable Lateral Raises',                  'prescription': '3×10'},
+                    {'name': 'EZ Bar Skull Crushers',                 'prescription': '3×10'},
+                    {'name': 'Lying Leg Raises',                      'prescription': '3×10'},
+                ],
+            },
+            {
+                'label': 'Day 2: Pull',
+                'avg_time': '55min–1h',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Close-Grip Lat Pulldown',               'prescription': '3×10'},
+                    {'name': 'Seated Machine Row',                    'prescription': '2×10'},
+                    {'name': 'Reverse Cable/Machine Flyes',           'prescription': '2×10'},
+                    {'name': 'Preacher Curls',                        'prescription': '2×10'},
+                    {'name': 'Dumbbell Curls',                        'prescription': '2×10'},
+                    {'name': 'Reverse Barbell Wrist Curl',            'prescription': '3×10'},
+                ],
+            },
+            {
+                'label': 'Day 3: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+            {
+                'label': 'Day 4: Legs + Core',
+                'avg_time': '1h 5min–1h 15min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curls',                      'prescription': '4×10'},
+                    {'name': 'Walking Dumbbell Lunges',               'prescription': '2×10'},
+                    {'name': 'Back Extensions',                       'prescription': '2×10'},
+                    {'name': 'Leg Extensions',                        'prescription': '3×10'},
+                    {'name': 'Hip Abductions',                        'prescription': '3×10'},
+                    {'name': 'Smith Machine Standing Calf Raises',    'prescription': '2×10'},
+                    {'name': 'Abdominal Crunch Machine',              'prescription': '3×10'},
+                ],
+            },
+            {
+                'label': 'Day 5: Upper Body',
+                'avg_time': '~1h 15min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Smith Machine Incline Bench Press',     'prescription': '3×10'},
+                    {'name': 'Pec Deck',                              'prescription': '2×10'},
+                    {'name': 'Close-Grip Lat Pulldown',               'prescription': '3×10'},
+                    {'name': 'Seated Machine/Cable Row',              'prescription': '2×10'},
+                    {'name': 'Dumbbell Lateral Raises',               'prescription': '3×10'},
+                    {'name': 'Overhead Triceps Extensions',           'prescription': '3×10'},
+                    {'name': 'Incline Dumbbell Curl',                 'prescription': '3×10'},
+                ],
+            },
+            {
+                'label': 'Day 6: Rest',
+                'avg_time': 'varies',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Light Cardio + Flexibility Leg Exercises', 'prescription': ''},
+                    {'name': 'Optional: Light Leg Day or Sprinting',     'prescription': '', 'optional': True},
+                ],
+            },
+            {
+                'label': 'Day 7: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'boxing-conditioning',
+        'name': 'Boxing & Conditioning – 4x per week',
+        'description': (
+            'Fun boxing & sprinting routine focused on functional strength and conditioning. '
+            'Combines bag work, technical drills, and sprint sessions with a dedicated '
+            'leg day and an upper-body day.'
+        ),
+        'days': [
+            {
+                'label': 'Day 1: Boxing Routines + Core',
+                'avg_time': '~1h 5min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Jumping Rope',                          'prescription': '3×1 min'},
+                    {'name': 'Freestyle Boxing Drills',               'prescription': '3×4 min'},
+                    {'name': 'Specialized Boxing Drills',             'prescription': '2×2 min'},
+                    {'name': 'Dumbbell Lateral Raises',               'prescription': '3×10'},
+                    {'name': 'Push-ups',                              'prescription': '3×13'},
+                    {'name': 'Lying Leg Raises',                      'prescription': '3×10'},
+                    {'name': 'Russian Twists',                        'prescription': '2×10'},
+                ],
+            },
+            {
+                'label': 'Day 2: Leg Day',
+                'avg_time': '~1h 10min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curls',                      'prescription': '4×10'},
+                    {'name': 'Walking Dumbbell Lunges',               'prescription': '2×10'},
+                    {'name': 'Back Extensions',                       'prescription': '2×10'},
+                    {'name': 'Hip Abductions',                        'prescription': '2×12'},
+                    {'name': 'Leg Extensions',                        'prescription': '3×10'},
+                    {'name': 'Smith Machine Calf Raises',             'prescription': '3×15'},
+                ],
+            },
+            {
+                'label': 'Day 3: Core',
+                'avg_time': '15–25 min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Lying Leg Raises',                      'prescription': '2×10'},
+                    {'name': 'Russian Twists',                        'prescription': '2×10'},
+                    {'name': 'Starfish Crunches',                     'prescription': '2×10'},
+                ],
+            },
+            {
+                'label': 'Day 4: Upper Body (Back-focused)',
+                'avg_time': '1h 15min–1h 30min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Smith Machine Incline Bench Press',         'prescription': '4×10'},
+                    {'name': 'Pull-ups',                                  'prescription': '2×10'},
+                    {'name': 'Seated Machine Row',                        'prescription': '3×10'},
+                    {'name': 'Dumbbell Lateral Raises',                   'prescription': '4×10'},
+                    {'name': 'Incline Dumbbell Curls',                    'prescription': '2×10'},
+                    {'name': 'Preacher Curls',                            'prescription': '2×10'},
+                    {'name': 'EZ Bar Skull Crushers',                     'prescription': '2×10'},
+                    {'name': 'Bodyweight Dips',                           'prescription': '2× to failure'},
+                    {'name': 'Standing Reversed Barbell Wrist Curls',     'prescription': '2× to failure'},
+                ],
+            },
+            {
+                'label': 'Day 5: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+            {
+                'label': 'Day 6: Sprinting Routines',
+                'avg_time': '45min–1h 10min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Jumping Rope',                              'prescription': '2×2 min'},
+                    {'name': 'Walking Lunges with Twist',                 'prescription': '1 min'},
+                    {'name': 'Leg Swings (front-to-back + side-to-side)', 'prescription': '30 sec/leg'},
+                    {'name': 'Deep Squats (warmup)',                      'prescription': 'a few reps'},
+                    {'name': 'Jumping Jacks',                             'prescription': '1×1 min'},
+                    {'name': 'Warm-up Sprint (non-all-out)',              'prescription': '1×'},
+                    {'name': 'All-out Sprints',                           'prescription': '6×40 m (rest 1–2 min between)'},
+                    {'name': 'Lying Leg Raises (finisher)',               'prescription': '3×10', 'optional': True},
+                    {'name': 'Russian Twists (finisher)',                 'prescription': '2×10', 'optional': True},
+                    {'name': 'Nordic Curls (finisher)',                   'prescription': '3×10', 'optional': True},
+                ],
+            },
+            {
+                'label': 'Day 7: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'upper-lower-async',
+        'name': 'Upper / Lower – Asynchronous 4–3x per week',
+        'description': (
+            'One of the best routines for consistent flow and PR setting. '
+            'Alternates upper and lower days with rest in between, running '
+            'asynchronously so the split repeats every 4 days rather than on a fixed weekly schedule.'
+        ),
+        'days': [
+            {
+                'label': 'Day 1: Upper Body',
+                'avg_time': '~1h 20min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Smith Machine Incline Bench Press',     'prescription': '2×10'},
+                    {'name': 'Pec Deck',                              'prescription': '2×10'},
+                    {'name': 'Close-Grip Lat Pulldown',               'prescription': '2×10'},
+                    {'name': 'Seated Machine/Cable Row',              'prescription': '3×10'},
+                    {'name': 'Dumbbell Lateral Raises',               'prescription': '3×10'},
+                    {'name': 'Machine Shoulder Press',                'prescription': '2×10'},
+                    {'name': 'Tricep Pushdown with Bar',              'prescription': '4×10'},
+                    {'name': 'Barbell Curl',                          'prescription': '3×10'},
+                    {'name': 'Barbell Wrist Curl',                    'prescription': '2×10'},
+                ],
+            },
+            {
+                'label': 'Day 2: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+            {
+                'label': 'Day 3: Lower Body + Core',
+                'avg_time': '~1h 5min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curl',                       'prescription': '3×10'},
+                    {'name': 'Leg Press',                             'prescription': '3×10'},
+                    {'name': 'Back Extension',                        'prescription': '2×10'},
+                    {'name': 'Leg Extension',                         'prescription': '3×10'},
+                    {'name': 'Leg Press (Calves Stance)',             'prescription': '3×10'},
+                    {'name': 'Russian Twists',                        'prescription': '2×10'},
+                    {'name': 'Lying Leg Raises',                      'prescription': '2×10'},
+                ],
+            },
+            {
+                'label': 'Day 4: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'arash-faves',
+        'name': 'Arash Faves – Asynchronous 4–3x per week',
+        'description': (
+            'Emphasises my favourite muscle groups — back, chest, arms, and shoulders — '
+            'with a dedicated leg day thrown in. Runs asynchronously so every 5-day block '
+            'repeats regardless of the calendar week.'
+        ),
+        'days': [
+            {
+                'label': 'Day 1: Back & Chest + Core',
+                'avg_time': '~1h',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Pec Deck',                              'prescription': '2×10'},
+                    {'name': 'Incline Dumbbell Press',                'prescription': '2×10'},
+                    {'name': 'Pull-ups',                              'prescription': '2×10'},
+                    {'name': 'Seated Machine Row',                    'prescription': '3×10'},
+                    {'name': 'Reverse Cable/Machine Flyes',           'prescription': '2×10'},
+                    {'name': 'Hanging Leg Raises',                    'prescription': '2×10'},
+                    {'name': 'Lying Leg Raises',                      'prescription': '2×10'},
+                ],
+            },
+            {
+                'label': 'Day 2: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+            {
+                'label': 'Day 3: Arms & Shoulders',
+                'avg_time': '1h 15min–1h 20min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Machine Shoulder Press',         'prescription': '2×10'},
+                    {'name': 'Cable Lateral Raises',                  'prescription': '3×10'},
+                    {'name': 'Incline Dumbbell Curl',                 'prescription': '2×10'},
+                    {'name': 'Hammer Curl',                           'prescription': '2×10'},
+                    {'name': 'Overhead Cable Triceps Extension',      'prescription': '2×10'},
+                    {'name': 'Tricep Pushdown with Bar',              'prescription': '2×10'},
+                    {'name': 'Barbell Wrist Curl',                    'prescription': '2×20'},
+                ],
+            },
+            {
+                'label': 'Day 4: Leg Day + Core',
+                'avg_time': '~1h 15min',
+                'rest': False,
+                'exercises': [
+                    {'name': 'Seated Leg Curl',                       'prescription': '2×10'},
+                    {'name': 'Barbell Back Squat',                    'prescription': '3×10'},
+                    {'name': 'Back Extension',                        'prescription': '2×10'},
+                    {'name': 'Leg Extension',                         'prescription': '3×10'},
+                    {'name': 'Standing Calf Raises',                  'prescription': '2×15'},
+                    {'name': 'Lying Leg Raises',                      'prescription': '3×10'},
+                ],
+            },
+            {
+                'label': 'Day 5: Rest',
+                'avg_time': '20–30 min',
+                'rest': True,
+                'exercises': [
+                    {'name': 'Neck + Face Exercises', 'prescription': ''},
+                ],
+            },
+        ],
+    },
 ]
 
 
