@@ -13,7 +13,9 @@
       "Bash(npx playwright *)",
       "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot.mjs)",
       "Bash(cat)",
-      "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot2.mjs)"
+      "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot2.mjs)",
+      "Bash(sed 's/mobile_after/mobile_multiyear/; s/desktop_after/desktop_multiyear/' /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot.mjs)",
+      "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot_my.mjs)"
     ]
   }
 }
