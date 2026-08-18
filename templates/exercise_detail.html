@@ -161,17 +161,42 @@
     {% endif %}
 </div>
 
-{% if performance_data %}
+{% if performance_data or cardio_data %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    // Builds the x-axis pieces for a date-keyed chart: short labels that stay
+    // horizontal as sessions accumulate, plus a tooltip showing the full date.
+    // The year is only added to axis labels once the data spans more than one
+    // year, so single-year charts stay uncluttered.
+    function buildDateAxis(isoDates) {
+        const spansMultipleYears = new Set(isoDates.map(d => d.slice(0, 4))).size > 1;
+        return {
+            labels: isoDates.map(dateStr => {
+                const label = new Date(dateStr + 'T00:00:00')
+                    .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return spansMultipleYears ? `${label} '${dateStr.slice(2, 4)}` : label;
+            }),
+            // autoSkipPadding keeps a clear gap between labels; the default (3px)
+            // lets them sit flush against each other on narrow screens.
+            ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 12 },
+            tooltipTitle: items => new Date(isoDates[items[0].dataIndex] + 'T00:00:00')
+                .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        };
+    }
+</script>
+{% endif %}
+
+{% if performance_data %}
 <script>
     // Weight Progression Chart
     const weightCtx = document.getElementById('weightProgressionChart').getContext('2d');
     const weightData = {{ performance_data | tojson }};
+    const weightAxis = buildDateAxis(weightData.map(d => d.date));
 
     new Chart(weightCtx, {
         type: 'line',
         data: {
-            labels: weightData.map(d => d.date),
+            labels: weightAxis.labels,
             datasets: [
                 {
                     label: 'Max Weight (kg)',
@@ -206,6 +231,7 @@
                 },
                 tooltip: {
                     callbacks: {
+                        title: weightAxis.tooltipTitle,
                         label: function(context) {
                             return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' kg';
                         }
@@ -224,7 +250,8 @@
                     title: {
                         display: true,
                         text: 'Date'
-                    }
+                    },
+                    ticks: weightAxis.ticks
                 }
             }
         }
@@ -233,11 +260,12 @@
     // Volume Progression Chart
     const volumeCtx = document.getElementById('volumeProgressionChart').getContext('2d');
     const volumeData = {{ volume_data | tojson }};
+    const volumeAxis = buildDateAxis(volumeData.map(d => d.date));
 
     new Chart(volumeCtx, {
         type: 'bar',
         data: {
-            labels: volumeData.map(d => d.date),
+            labels: volumeAxis.labels,
             datasets: [{
                 label: 'Total Volume (kg)',
                 data: volumeData.map(d => d.volume),
@@ -256,6 +284,7 @@
                 },
                 tooltip: {
                     callbacks: {
+                        title: volumeAxis.tooltipTitle,
                         label: function(context) {
                             return 'Volume: ' + context.parsed.y.toFixed(1) + ' kg';
                         }
@@ -274,7 +303,8 @@
                     title: {
                         display: true,
                         text: 'Date'
-                    }
+                    },
+                    ticks: volumeAxis.ticks
                 }
             }
         }
@@ -283,15 +313,15 @@
 {% endif %}
 
 {% if cardio_data %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
     const cardioData = {{ cardio_data | tojson }};
+    const cardioAxis = buildDateAxis(cardioData.map(d => d.date));
 
     // Duration Chart
     new Chart(document.getElementById('cardioTimeChart').getContext('2d'), {
         type: 'bar',
         data: {
-            labels: cardioData.map(d => d.date),
+            labels: cardioAxis.labels,
             datasets: [{
                 label: 'Duration (min)',
                 data: cardioData.map(d => d.time_minutes),
@@ -307,6 +337,7 @@
                 legend: { display: true, position: 'top' },
                 tooltip: {
                     callbacks: {
+                        title: cardioAxis.tooltipTitle,
                         label: function(context) {
                             return 'Duration: ' + context.parsed.y.toFixed(1) + ' min';
                         }
@@ -315,7 +346,7 @@
             },
             scales: {
                 y: { beginAtZero: true, title: { display: true, text: 'Duration (min)' } },
-                x: { title: { display: true, text: 'Date' } }
+                x: { title: { display: true, text: 'Date' }, ticks: cardioAxis.ticks }
             }
         }
     });
@@ -324,7 +355,7 @@
     new Chart(document.getElementById('cardioCalChart').getContext('2d'), {
         type: 'line',
         data: {
-            labels: cardioData.map(d => d.date),
+            labels: cardioAxis.labels,
             datasets: [{
                 label: 'Calories Burned',
                 data: cardioData.map(d => d.calories),
@@ -341,6 +372,7 @@
                 legend: { display: true, position: 'top' },
                 tooltip: {
                     callbacks: {
+                        title: cardioAxis.tooltipTitle,
                         label: function(context) {
                             return 'Calories: ' + context.parsed.y.toFixed(0) + ' cal';
                         }
@@ -349,7 +381,7 @@
             },
             scales: {
                 y: { beginAtZero: true, title: { display: true, text: 'Calories' } },
-                x: { title: { display: true, text: 'Date' } }
+                x: { title: { display: true, text: 'Date' }, ticks: cardioAxis.ticks }
             }
         }
     });

@@ -141,7 +141,10 @@
                             x: {
                                 ticks: {
                                     maxRotation: 0,
-                                    autoSkip: true
+                                    autoSkip: true,
+                                    // Keeps a clear gap between labels; the default
+                                    // (3px) lets them sit flush on narrow screens.
+                                    autoSkipPadding: 12
                                 }
                             },
                             y: {
