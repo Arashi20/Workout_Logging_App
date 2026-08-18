@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chromium-cli --help)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(pip show *)",
+      "Bash(./venv/Scripts/python.exe -m pip show flask)",
+      "Bash(./venv/Scripts/python.exe -m pip install pytz)",
+      "Bash(./venv/Scripts/python.exe -c \"import requests; print\\(requests.__version__\\)\")",
+      "Read(//c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/**)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot.mjs)",
+      "Bash(cat)",
+      "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot2.mjs)"
+    ]
+  }
+}

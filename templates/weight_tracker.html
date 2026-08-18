@@ -91,10 +91,14 @@
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('weightChart').getContext('2d');
+                const formattedDates = data.dates.map(dateStr => {
+                    const date = new Date(dateStr + 'T00:00:00');
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: data.dates,
+                        labels: formattedDates,
                         datasets: [
                             {
                                 label: 'Weight (kg)',
@@ -122,6 +126,12 @@
                             }
                         },
                         scales: {
+                            x: {
+                                ticks: {
+                                    maxRotation: 0,
+                                    autoSkip: true
+                                }
+                            },
                             y: {
                                 beginAtZero: false
                             }
