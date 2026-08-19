@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog
 from sqlalchemy import event, text, inspect, func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 import click
@@ -676,39 +677,53 @@ def history():
         WorkoutSession.end_time.isnot(None)
     )
     
-    # Get all sessions for date filter list
-    all_sessions = base_query.order_by(WorkoutSession.start_time.desc()).all()
-    
+    # The total count and the filter-button dates only need timestamps, so query
+    # that one column instead of loading every session entity.
+    start_times = base_query.with_entities(
+        WorkoutSession.start_time
+    ).order_by(WorkoutSession.start_time.desc()).all()
+    total_workouts = len(start_times)
+
     # Extract the 5 most recent unique dates for filter buttons
     available_dates = []
     seen_dates = set()
-    for session in all_sessions:
+    for (start_time,) in start_times:
         if len(available_dates) >= 5:
             break
-        date_str = session.start_time.strftime('%Y-%m-%d')
+        date_str = start_time.strftime('%Y-%m-%d')
         if date_str not in seen_dates:
             available_dates.append({
                 'date': date_str,
-                'display': session.start_time.strftime('%B %d, %Y')
+                'display': start_time.strftime('%B %d, %Y')
             })
             seen_dates.add(date_str)
-    
+
+    # Eager-load the logs (and their exercises) for the sessions actually rendered.
+    # Without this, the stats loop below issues one query per session, plus one per
+    # exercise lookup.
+    display_query = base_query.options(
+        selectinload(WorkoutSession.workout_logs).selectinload(WorkoutLog.exercise)
+    ).order_by(WorkoutSession.start_time.desc())
+
     # Filter sessions based on parameters
     if filter_date:
         # Filter by specific date
         try:
             filter_datetime = datetime.strptime(filter_date, '%Y-%m-%d')
-            sessions = [s for s in all_sessions if s.start_time.date() == filter_datetime.date()]
+            sessions = display_query.filter(
+                WorkoutSession.start_time >= filter_datetime,
+                WorkoutSession.start_time < filter_datetime + timedelta(days=1)
+            ).all()
         except ValueError:
             flash('Invalid date format', 'error')
-            sessions = all_sessions[:5]
+            sessions = display_query.limit(5).all()
     elif show_all:
         # Show all sessions
-        sessions = all_sessions
+        sessions = display_query.all()
     else:
         # Default: show last 5 sessions
-        sessions = all_sessions[:5]
-    
+        sessions = display_query.limit(5).all()
+
     # Calculate statistics for each session
     session_data = []
     for session in sessions:
@@ -755,7 +770,7 @@ def history():
     return render_template('history.html', 
                           session_data=session_data,
                           available_dates=available_dates,
-                          total_workouts=len(all_sessions),
+                          total_workouts=total_workouts,
                           showing_count=len(sessions),
                           filter_date=filter_date,
                           show_all=show_all)
