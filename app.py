@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 from collections import defaultdict
 from operator import attrgetter
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -202,6 +202,31 @@ def index():
         
         return render_template('landing.html', stats=stats)
     return redirect(url_for('login'))
+
+@app.route('/sw.js')
+def service_worker():
+    """Serve the service worker from the site root.
+
+    A service worker can only control pages inside its own directory, so
+    serving it from /static/ would limit its scope to /static/ and leave every
+    page of the app uncontrolled.
+    """
+    response = send_from_directory('static', 'sw.js')
+    response.headers['Content-Type'] = 'application/javascript'
+    # Always revalidate, so an updated worker is picked up on the next visit.
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
+
+
+@app.route('/offline')
+def offline():
+    """Fallback page shown by the service worker when the network is down.
+
+    Deliberately public and user-agnostic: it gets precached, and caching an
+    authenticated page would store one user's data on disk.
+    """
+    return render_template('offline.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

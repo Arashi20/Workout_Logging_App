@@ -77,11 +77,19 @@
             }
         }
         
-        // Register service worker for PWA functionality
+        // Register service worker for PWA functionality.
+        // Registered from /sw.js so its scope is the whole site; the old
+        // /static/sw.js registration was scoped to /static/ and controlled
+        // nothing, so any leftover copy is unregistered here.
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('Service Worker registered'))
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    regs.filter(reg => reg.scope.endsWith('/static/'))
+                        .forEach(reg => reg.unregister());
+                });
+
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
                     .catch(err => console.log('Service Worker registration failed:', err));
             });
         }

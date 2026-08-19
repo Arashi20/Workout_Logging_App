@@ -18,7 +18,14 @@
       "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/screenshot_my.mjs)",
       "Bash(SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/ex_shots.mjs)",
       "Bash(./venv/Scripts/python.exe -m pip freeze)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(SCRATCH_WIN=C:/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad SCRATCH=/c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/sw_test.mjs)",
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -sf -o /dev/null -w \"server: %{http_code}\\\\n\" http://127.0.0.1:5000/login)",
+      "Bash(node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/sw_test3.mjs)",
+      "Bash(node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/sw_scope.mjs)",
+      "Bash(SCRATCH_WIN=C:/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad node /c/Users/arash/AppData/Local/Temp/claude/c--Users-arash-Desktop-Personal-Projects-Workout-Logging-App/1ff77a20-165a-4dc8-9a22-b9dbcb5c68e2/scratchpad/sw_safety.mjs)",
+      "Bash(git checkout *)"
     ]
   }
 }
