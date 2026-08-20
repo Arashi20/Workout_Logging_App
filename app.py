@@ -601,7 +601,115 @@ def delete_set(log_id):
     db.session.delete(workout_log)
     db.session.commit()
     flash('Set deleted successfully', 'success')
-    
+
+    return redirect(url_for('workout'))
+
+@app.route('/workout/edit_set/<int:log_id>', methods=['POST'])
+@login_required
+def edit_set(log_id):
+    """Correct the values of a set already logged in the active session.
+
+    Only the measurements are editable, not which exercise the set belongs to --
+    changing that would move the set between exercise groups and renumber both.
+    PRs are written when the workout is finished, so nothing needs recalculating
+    here.
+    """
+    workout_log = WorkoutLog.query.get_or_404(log_id)
+
+    # Verify the log belongs to the current user's active session
+    active_session = WorkoutSession.query.filter_by(
+        user_id=current_user.id,
+        end_time=None
+    ).first()
+
+    if not active_session or workout_log.session_id != active_session.id:
+        flash('This set cannot be edited because it does not belong to your active workout session', 'error')
+        return redirect(url_for('workout'))
+
+    exercise = workout_log.exercise
+    weight = request.form.get('weight')
+    reps = request.form.get('reps')
+    set_type = request.form.get('set_type', workout_log.set_type)
+
+    if set_type not in ['working', 'warmup']:
+        flash('Invalid set type', 'error')
+        return redirect(url_for('workout'))
+
+    # Mirrors the validation in add_set so an edited set can never hold values
+    # that adding one would have rejected.
+    if exercise.is_cardio:
+        # For cardio: weight field = calories, reps field = time_minutes
+        calories_float = None
+        if weight:
+            try:
+                calories_float = float(weight)
+                if calories_float < 0 or calories_float > 10000:
+                    flash('Calories must be between 0 and 10000', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid calories value', 'error')
+                return redirect(url_for('workout'))
+
+        time_float = None
+        if reps:
+            try:
+                time_float = float(reps)
+                if time_float < 0 or time_float > 1440:
+                    flash('Time must be between 0 and 1440 minutes', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid time value', 'error')
+                return redirect(url_for('workout'))
+
+        if calories_float is None and time_float is None:
+            flash('Enter calories or time for a cardio set', 'error')
+            return redirect(url_for('workout'))
+
+        workout_log.calories = calories_float
+        workout_log.time_minutes = time_float
+    else:
+        try:
+            reps_int = int(reps)
+            if reps_int < 1 or reps_int > 1000:
+                flash('Reps must be between 1 and 1000', 'error')
+                return redirect(url_for('workout'))
+        except (ValueError, TypeError):
+            flash('Invalid reps value', 'error')
+            return redirect(url_for('workout'))
+
+        weight_float = None
+        if weight:
+            try:
+                weight_float = float(weight)
+                if weight_float < 0 or weight_float > 10000:
+                    flash('Weight must be between 0 and 10000 kg', 'error')
+                    return redirect(url_for('workout'))
+            except (ValueError, TypeError):
+                flash('Invalid weight value', 'error')
+                return redirect(url_for('workout'))
+
+        if exercise.is_bodyweight:
+            bodyweight_kg_raw = request.form.get('bodyweight_kg')
+            if bodyweight_kg_raw:
+                try:
+                    bodyweight_kg_float = float(bodyweight_kg_raw)
+                    if bodyweight_kg_float < 20 or bodyweight_kg_float > 300:
+                        flash('Bodyweight must be between 20 and 300 kg', 'error')
+                        return redirect(url_for('workout'))
+                    workout_log.bodyweight_kg = bodyweight_kg_float
+                except (ValueError, TypeError):
+                    flash('Invalid bodyweight value', 'error')
+                    return redirect(url_for('workout'))
+            else:
+                workout_log.bodyweight_kg = None
+
+        workout_log.reps = reps_int
+        workout_log.weight = weight_float
+
+    workout_log.set_type = set_type
+    db.session.commit()
+
+    flash('Set updated successfully', 'success')
     return redirect(url_for('workout'))
 
 def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_minutes=None):

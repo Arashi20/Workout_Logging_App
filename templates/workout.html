@@ -89,6 +89,18 @@
                     <span class="pr-badge">🏆 PR</span>
                     {% endif %}
                     <span class="set-type">{{ log.set_type }}</span>
+                    <button type="button" class="btn-edit"
+                            data-log-id="{{ log.id }}"
+                            data-exercise-name="{{ log.exercise.name }}"
+                            data-is-cardio="{{ 1 if log.exercise.is_cardio else 0 }}"
+                            data-is-bodyweight="{{ 1 if log.exercise.is_bodyweight else 0 }}"
+                            data-weight="{{ log.weight if log.weight is not none else '' }}"
+                            data-reps="{{ log.reps if log.reps is not none else '' }}"
+                            data-calories="{{ log.calories if log.calories is not none else '' }}"
+                            data-time-minutes="{{ log.time_minutes if log.time_minutes is not none else '' }}"
+                            data-bodyweight-kg="{{ log.bodyweight_kg if log.bodyweight_kg is not none else '' }}"
+                            data-set-type="{{ log.set_type }}"
+                            aria-label="Edit set">✎</button>
                     <button type="button" class="btn-delete" data-log-id="{{ log.id }}" data-exercise-name="{{ log.exercise.name }}" data-set-info="{% if log.exercise.is_cardio %}{% if log.calories %}{{ log.calories }} cal{% endif %}{% if log.calories and log.time_minutes %} / {% endif %}{% if log.time_minutes %}{{ log.time_minutes }} min{% endif %}{% else %}{% if log.weight %}{{ log.weight }}kg × {% endif %}{{ log.reps }} reps{% endif %}" aria-label="Delete set">×</button>
                 </div>
             {% endfor %}
@@ -122,6 +134,47 @@
         </div>
     </div>
     
+    <!-- Edit Set Modal -->
+    <div class="modal-overlay" id="edit-set-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Set</h2>
+            </div>
+            <form method="POST" action="" id="edit-set-form">
+                <div class="modal-body">
+                    <p id="edit-set-subject"></p>
+
+                    <div class="form-group">
+                        <label for="edit-weight" id="edit-weight-label">Weight (kg)</label>
+                        <input type="number" id="edit-weight" name="weight" step="0.1" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-reps" id="edit-reps-label">Reps</label>
+                        <input type="number" id="edit-reps" name="reps" step="1" min="1">
+                    </div>
+
+                    <div class="form-group" id="edit-bodyweight-group" style="display: none;">
+                        <label for="edit-bodyweight">Bodyweight (kg)</label>
+                        <input type="number" id="edit-bodyweight" name="bodyweight_kg" step="0.1" min="20" max="300">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-set-type">Set Type</label>
+                        <select id="edit-set-type" name="set_type">
+                            <option value="working">Working</option>
+                            <option value="warmup">Warmup</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="edit-modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Delete Set Modal -->
     <div class="modal-overlay" id="delete-set-modal">
         <div class="modal-content">
@@ -183,7 +236,70 @@
     const deleteModalCancel = document.getElementById('delete-modal-cancel');
     const deleteSetMessage = document.getElementById('delete-set-message');
     const deleteButtons = document.querySelectorAll('.btn-delete');
-    
+
+    // Edit set modal - prefills with the set's current values
+    const editSetModal = document.getElementById('edit-set-modal');
+    const editSetForm = document.getElementById('edit-set-form');
+    const editModalCancel = document.getElementById('edit-modal-cancel');
+    const editButtons = document.querySelectorAll('.btn-edit');
+
+    if (editSetModal && editSetForm && editModalCancel) {
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const isCardio = this.getAttribute('data-is-cardio') === '1';
+                const isBodyweight = this.getAttribute('data-is-bodyweight') === '1';
+
+                const weightInput = document.getElementById('edit-weight');
+                const repsInput = document.getElementById('edit-reps');
+                const bodyweightGroup = document.getElementById('edit-bodyweight-group');
+
+                // Cardio sets reuse the weight/reps fields for calories/minutes,
+                // matching how add_set and the backend read the form.
+                if (isCardio) {
+                    document.getElementById('edit-weight-label').textContent = 'Calories';
+                    document.getElementById('edit-reps-label').textContent = 'Time (minutes)';
+                    weightInput.value = this.getAttribute('data-calories');
+                    repsInput.value = this.getAttribute('data-time-minutes');
+                    repsInput.step = '0.1';
+                    repsInput.min = '0';
+                } else {
+                    document.getElementById('edit-weight-label').textContent = 'Weight (kg)';
+                    document.getElementById('edit-reps-label').textContent = 'Reps';
+                    weightInput.value = this.getAttribute('data-weight');
+                    repsInput.value = this.getAttribute('data-reps');
+                    repsInput.step = '1';
+                    repsInput.min = '1';
+                }
+
+                bodyweightGroup.style.display = (!isCardio && isBodyweight) ? '' : 'none';
+                document.getElementById('edit-bodyweight').value =
+                    this.getAttribute('data-bodyweight-kg');
+                document.getElementById('edit-set-type').value =
+                    this.getAttribute('data-set-type');
+
+                // Build the subject line with DOM methods rather than innerHTML
+                const subject = document.getElementById('edit-set-subject');
+                subject.textContent = '';
+                const strong = document.createElement('strong');
+                strong.textContent = this.getAttribute('data-exercise-name');
+                subject.appendChild(strong);
+
+                editSetForm.action = '/workout/edit_set/' + this.getAttribute('data-log-id');
+                editSetModal.classList.add('active');
+            });
+        });
+
+        editModalCancel.addEventListener('click', function() {
+            editSetModal.classList.remove('active');
+        });
+
+        editSetModal.addEventListener('click', function(event) {
+            if (event.target === editSetModal) {
+                editSetModal.classList.remove('active');
+            }
+        });
+    }
+
     if (deleteSetModal && deleteSetForm && deleteModalCancel) {
         deleteButtons.forEach(button => {
             button.addEventListener('click', function() {
