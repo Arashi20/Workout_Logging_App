@@ -29,8 +29,28 @@ def now_amsterdam():
     return datetime.now(AMSTERDAM_TZ).replace(tzinfo=None)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///workout.db')
+
+_database_url = os.getenv('DATABASE_URL', 'sqlite:///workout.db')
+# Production here means "not a local sqlite dev run": either Railway sets its own
+# environment variable, or we're pointed at a real Postgres database.
+IS_PRODUCTION = bool(os.getenv('RAILWAY_ENVIRONMENT')) or _database_url.startswith(
+    ('postgres://', 'postgresql://')
+)
+
+_secret_key = os.getenv('SECRET_KEY')
+if not _secret_key:
+    if IS_PRODUCTION:
+        # Falling back to a hardcoded key in production would let anyone who has
+        # read this source forge a signed session cookie, so refuse to start.
+        raise RuntimeError(
+            'SECRET_KEY environment variable must be set in production. '
+            'Without it, session cookies could be forged by anyone with access '
+            'to this source code.'
+        )
+    _secret_key = 'dev-secret-key-change-in-production'
+app.config['SECRET_KEY'] = _secret_key
+
+app.config['SQLALCHEMY_DATABASE_URI'] = _database_url
 # Normalize DATABASE_URL to use psycopg (version 3) driver
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql+psycopg://')
@@ -2430,9 +2450,29 @@ def create_admin():
 @app.cli.command()
 def reset_db():
     """Drop all tables and recreate them. WARNING: This will delete all data!"""
+    # This is destructive and unrecoverable, so require an explicit opt-in rather
+    # than just printing a warning. Exiting non-zero means that if this ever ends
+    # up in a deploy step by mistake, the deploy fails instead of wiping the data.
+    if os.getenv('CONFIRM_RESET_DB', '').lower() != 'yes':
+        print('Refusing to run: reset-db permanently deletes ALL data.')
+        print('If you are sure, set CONFIRM_RESET_DB=yes for this command only:')
+        print('    CONFIRM_RESET_DB=yes flask reset-db')
+        raise SystemExit(1)
+
+    # Resetting production is occasionally deliberate (early development, schema
+    # churn), so it stays possible -- but behind a second, separate variable, so
+    # it can never happen from a stray copy-paste of the command alone.
+    if IS_PRODUCTION and os.getenv('CONFIRM_PRODUCTION_RESET', '').lower() != 'yes':
+        print('Refusing to run against the PRODUCTION database.')
+        print('This deletes all real training history, permanently.')
+        print('Prefer "flask migrate-schema", which changes the schema and keeps data.')
+        print('If you really mean to wipe production, set both variables:')
+        print('    CONFIRM_RESET_DB=yes CONFIRM_PRODUCTION_RESET=yes flask reset-db')
+        raise SystemExit(1)
+
     print('WARNING: This will delete ALL data in the database!')
     print('This command should only be used in testing/development.')
-    
+
     # Drop all tables
     db.drop_all()
     print('All tables dropped.')
@@ -2446,7 +2486,10 @@ def reset_db():
     print(f'Admin user recreated: {username}')
     print('Database reset complete!')
 
-    # Use the Railway pre-deploy input to run "flask reset-db" before deploying so that all tables are refreshed with the latest schema changes. This is especially useful during early development when the schema is changing frequently. Just be cautious when using this command as it will delete all existing data.
+    # DO NOT put "flask reset-db" in Railway's pre-deploy step -- it drops every
+    # table, so it would delete all real training history on each deploy. It is a
+    # local development command only, which is why it now refuses to run against
+    # production. Use "flask migrate-schema" for schema changes; it preserves data.
 
 @app.cli.command()
 def migrate_schema():
@@ -2482,9 +2525,14 @@ def migrate_schema():
         
         print(f'Current columns in exercises table: {", ".join(actual_columns)}')
         
-        # Add column(s) below if missing from the current schema
-        # In Railway, just fill in "flask migrate-schema" as the command in the pre-deploy step and it will run this migration before deploying the new code with the updated model
-        # Or add your migration script to \scripts and then use python \scripts\migrate_PLACEHOLDER to run it against your database URL directly for more complex migrations.
+        # Add column(s) below if missing from the current schema.
+        # NOTE: this is no longer wired into Railway's pre-deploy step -- that step
+        # was removed on 2026-08-21 because it hung indefinitely without ever
+        # finishing (the migration itself completed in under a second; the process
+        # just never exited). Run this manually against the production DATABASE_URL
+        # after any models.py change that adds a column or table.
+        # For more complex migrations, add a script under \scripts and run it
+        # directly against your database URL.
 
         # Migrate workout_logs table
         if db_type == 'sqlite':
@@ -2505,7 +2553,7 @@ def migrate_schema():
                 "ALTER TABLE workout_logs ADD COLUMN bodyweight_kg FLOAT DEFAULT NULL"
             ))
             db.session.commit()
-            print('✓ Added bodyweight_kg column to workout_logs')
+            print('[OK] Added bodyweight_kg column to workout_logs')
         else:
             print('  bodyweight_kg already exists in workout_logs')
 
@@ -2522,7 +2570,7 @@ def migrate_schema():
                 )
             """))
             db.session.commit()
-            print('✓ Ensured food_presets table exists')
+            print('[OK] Ensured food_presets table exists')
         else:
             db.session.execute(text("""
                 CREATE TABLE IF NOT EXISTS food_presets (
@@ -2535,7 +2583,7 @@ def migrate_schema():
                 )
             """))
             db.session.commit()
-            print('✓ Ensured food_presets table exists')
+            print('[OK] Ensured food_presets table exists')
 
         # Create protein_logs table if missing
         if db_type == 'postgresql':
@@ -2550,7 +2598,7 @@ def migrate_schema():
                 )
             """))
             db.session.commit()
-            print('✓ Ensured protein_logs table exists')
+            print('[OK] Ensured protein_logs table exists')
         else:
             db.session.execute(text("""
                 CREATE TABLE IF NOT EXISTS protein_logs (
@@ -2563,12 +2611,12 @@ def migrate_schema():
                 )
             """))
             db.session.commit()
-            print('✓ Ensured protein_logs table exists')
+            print('[OK] Ensured protein_logs table exists')
 
     except Exception as e:
         db.session.rollback()
         db_info = f' ({db_type})' if db_type else ''
-        print(f'\n✗ Error during migration{db_info}: {e}')
+        print(f'\n[ERROR] Error during migration{db_info}: {e}')
         print('\nIf you continue to have issues, you may need to manually add the column')
         raise
 
