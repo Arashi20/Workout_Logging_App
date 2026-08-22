@@ -29,7 +29,10 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="exercise_search">Exercise</label>
-                    <input type="text" id="exercise_search" placeholder="Type to search exercises..." autocomplete="off">
+                    <div class="exercise-search-wrapper">
+                        <input type="text" id="exercise_search" placeholder="Type to search exercises..." autocomplete="off">
+                        <button type="button" id="exercise_clear" class="exercise-clear-btn" aria-label="Clear exercise" title="Clear exercise" style="display: none;">&times;</button>
+                    </div>
                     <input type="hidden" id="exercise_id" name="exercise_id" required>
                     <div id="exercise_dropdown" class="exercise-dropdown"></div>
                 </div>
@@ -345,6 +348,7 @@
     const exerciseSearch = document.getElementById('exercise_search');
     const exerciseId = document.getElementById('exercise_id');
     const exerciseDropdown = document.getElementById('exercise_dropdown');
+    const exerciseClearBtn = document.getElementById('exercise_clear');
     const weightInput = document.getElementById('weight');
     const repsInput = document.getElementById('reps');
     const prIndicator = document.getElementById('pr-indicator');
@@ -384,6 +388,43 @@
         selectedIndex = -1;
     }
     
+    function updateClearButton() {
+        if (!exerciseClearBtn) return;
+        exerciseClearBtn.style.display = exerciseSearch.value.length > 0 ? 'flex' : 'none';
+    }
+
+    function clearExercise() {
+        exerciseSearch.value = '';
+        exerciseId.value = '';
+        exerciseDropdown.classList.remove('active');
+        selectedIndex = -1;
+        localStorage.removeItem('lastWorkoutExercise');
+        if (prIndicator) prIndicator.style.display = 'none';
+
+        // Reset labels/inputs back to their strength-exercise defaults
+        const weightLabel = document.getElementById('weight-label');
+        const repsLabel = document.getElementById('reps-label');
+        const setTypeSelect = document.getElementById('set_type');
+        const warmupOption = setTypeSelect.querySelector('option[value="warmup"]');
+        const bodyweightKgGroup = document.getElementById('bodyweight-kg-group');
+
+        weightLabel.textContent = weightLabel.dataset.defaultLabel;
+        repsLabel.textContent = repsLabel.dataset.defaultLabel;
+        weightInput.placeholder = '';
+        repsInput.placeholder = '';
+        repsInput.step = '1';
+        repsInput.min = '1';
+        if (bodyweightKgGroup) bodyweightKgGroup.style.display = 'none';
+        if (warmupOption) warmupOption.style.display = '';
+
+        updateClearButton();
+        exerciseSearch.focus();
+    }
+
+    if (exerciseClearBtn) {
+        exerciseClearBtn.addEventListener('click', clearExercise);
+    }
+
     function selectExercise(exercise) {
         exerciseSearch.value = exercise.name;
         exerciseId.value = exercise.id;
@@ -442,6 +483,7 @@
             }
         }
         checkPrIndicator();
+        updateClearButton();
     }
     
     function checkPrIndicator() {
@@ -490,6 +532,7 @@
         const searchTerm = this.value.trim();
         exerciseId.value = '';
         prIndicator.style.display = 'none';
+        updateClearButton();
         
         if (searchTerm.length === 0) {
             exerciseDropdown.classList.remove('active');
@@ -564,6 +607,7 @@
             }
         } catch (e) {}
     }
+    updateClearButton();
 
     // Update PR indicator when weight, reps, or set type changes
     if (weightInput) weightInput.addEventListener('input', checkPrIndicator);
