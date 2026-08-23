@@ -16,7 +16,7 @@
             <h2>{{ exercise_type }} ({{ prs|length }})</h2>
             <div class="pr-cards-grid">
                 {% for pr in prs %}
-                <div class="pr-card">
+                <a href="{{ url_for('exercise_detail', exercise_id=pr.exercise.id) }}" class="pr-card pr-card-link">
                     <div class="pr-header">
                         <h3>{{ pr.exercise.name }}</h3>
                         <span class="pr-date">{{ pr.achieved_at.strftime('%Y-%m-%d') }}</span>
@@ -32,7 +32,7 @@
                         <span class="pr-reps">× {{ pr.reps }} reps</span>
                         {% endif %}
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             </div>
         </div>
