@@ -1921,6 +1921,23 @@ def nutrition():
         day = today - timedelta(days=6 - i)
         weekly_summary.append({'date': day, 'total_g': round(weekly_totals.get(day, 0), 1)})
 
+    # 30-day average: mean daily protein across the days that actually have logs
+    month_start = datetime(today.year, today.month, today.day) - timedelta(days=29)
+    month_logs = ProteinLog.query.filter(
+        ProteinLog.user_id == current_user.id,
+        ProteinLog.logged_at >= month_start
+    ).all()
+
+    monthly_totals = defaultdict(float)
+    for log in month_logs:
+        monthly_totals[log.logged_at.date()] += log.protein_g
+
+    days_logged_30 = len(monthly_totals)
+    if days_logged_30:
+        avg_protein_30d = round(sum(monthly_totals.values()) / days_logged_30, 1)
+    else:
+        avg_protein_30d = 0.0
+
     return render_template(
         'nutrition.html',
         today_logs=today_logs,
@@ -1928,7 +1945,9 @@ def nutrition():
         progress_pct=round(progress_pct, 1),
         presets=presets,
         weekly_summary=weekly_summary,
-        protein_target=protein_target
+        protein_target=protein_target,
+        avg_protein_30d=avg_protein_30d,
+        days_logged_30=days_logged_30
     )
 
 

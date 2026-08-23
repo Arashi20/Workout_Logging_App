@@ -173,6 +173,28 @@
             <a href="{{ url_for('export_protein_logs') }}" class="btn btn-primary" style="font-size: 0.9rem;">Export CSV</a>
         </p>
     </div>
+
+    <!-- Section 5: 30-Day Average -->
+    <div class="add-weight-card">
+        <h2>30-Day Average</h2>
+        {% if days_logged_30 %}
+        <div style="text-align: center;">
+            <span style="font-size: 2.5rem; font-weight: 700;
+                color: {% if avg_protein_30d >= protein_target %}var(--success-color){% else %}var(--text-primary){% endif %};">{{ avg_protein_30d }}g</span>
+            <span style="font-size: 1.2rem; color: var(--text-secondary);"> / day</span>
+        </div>
+        <p style="text-align: center; color: var(--text-secondary); margin-top: 0.5rem;">
+            {% if avg_protein_30d >= protein_target %}
+            {{ (avg_protein_30d - protein_target) | round(1) }}g above the {{ protein_target }}g goal on average
+            {% else %}
+            {{ (protein_target - avg_protein_30d) | round(1) }}g below the {{ protein_target }}g goal on average
+            {% endif %}
+            &middot; {{ days_logged_30 }} of 30 days logged
+        </p>
+        {% else %}
+        <p style="color: var(--text-secondary); text-align: center;">No protein logged in the last 30 days.</p>
+        {% endif %}
+    </div>
 </div>
 
 {% if presets %}
