@@ -10,7 +10,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog, DailySteps
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Engine
@@ -371,6 +371,8 @@ def workout():
             if is_pr:
                 pr_set_ids.add(log.id)
 
+    steps_today, steps_avg_7d, steps_avg_30d = get_step_summary(current_user.id)
+
     return render_template('workout.html',
                          active_session=active_session,
                          exercises=exercises_list,
@@ -378,7 +380,70 @@ def workout():
                          start_epoch_ms=start_epoch_ms,
                          pr_set_ids=pr_set_ids,
                          pr_by_exercise=pr_by_exercise,
-                         last_bodyweight_kg=last_bodyweight_kg)
+                         last_bodyweight_kg=last_bodyweight_kg,
+                         steps_today=steps_today,
+                         steps_avg_7d=steps_avg_7d,
+                         steps_avg_30d=steps_avg_30d)
+
+def get_step_summary(user_id):
+    """Return (today's steps, 7-day average, 30-day average) for a user.
+
+    Averages are taken over the days that actually have an entry, so a missed
+    day does not count as zero and drag the average down.
+    """
+    today = now_amsterdam().date()
+
+    today_entry = DailySteps.query.filter_by(user_id=user_id, date=today).first()
+    steps_today = today_entry.steps if today_entry else None
+
+    def average_over(days):
+        window_start = today - timedelta(days=days - 1)
+        rows = db.session.query(DailySteps.steps).filter(
+            DailySteps.user_id == user_id,
+            DailySteps.date >= window_start,
+            DailySteps.date <= today
+        ).all()
+        if not rows:
+            return None
+        return round(sum(row[0] for row in rows) / len(rows))
+
+    return steps_today, average_over(7), average_over(30)
+
+
+@app.route('/steps/log', methods=['POST'])
+@login_required
+def steps_log():
+    """Set today's step count. One row per day - re-submitting overwrites it."""
+    steps_str = request.form.get('steps', '').strip()
+
+    try:
+        steps = int(steps_str)
+    except (ValueError, TypeError):
+        flash('Please enter a valid step count.', 'error')
+        return redirect(url_for('workout'))
+
+    if not (0 <= steps <= 200000):
+        flash('Step count must be between 0 and 200,000.', 'error')
+        return redirect(url_for('workout'))
+
+    today = now_amsterdam().date()
+
+    try:
+        entry = DailySteps.query.filter_by(user_id=current_user.id, date=today).first()
+        if entry:
+            entry.steps = steps
+        else:
+            entry = DailySteps(user_id=current_user.id, date=today, steps=steps)
+            db.session.add(entry)
+        db.session.commit()
+        flash(f'Logged {steps:,} steps for today.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Error logging steps: {str(e)}')
+        flash('Error saving step count.', 'error')
+
+    return redirect(url_for('workout'))
+
 
 @app.route('/workout/start', methods=['POST'])
 @login_required

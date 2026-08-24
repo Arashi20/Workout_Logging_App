@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     food_presets = db.relationship('FoodPreset', backref='user', lazy=True, cascade='all, delete-orphan')
     protein_logs = db.relationship('ProteinLog', backref='user', lazy=True, cascade='all, delete-orphan')
     streak_logs = db.relationship('StreakLog', backref='user', lazy=True, cascade='all, delete-orphan')
+    daily_steps = db.relationship('DailySteps', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Exercise(db.Model):
     __tablename__ = 'exercises'
@@ -181,3 +182,18 @@ class StreakLog(db.Model):
     start_date = db.Column(db.DateTime, nullable=False, default=now_amsterdam)
     end_date = db.Column(db.DateTime, nullable=True)   # NULL = ongoing streak
     relapse_note = db.Column(db.Text, nullable=True)
+
+
+class DailySteps(db.Model):
+    """One row per user per calendar day - the day's step count is overwritten, not accumulated."""
+    __tablename__ = 'daily_steps'
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'date', name='uq_daily_steps_user_date'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, index=True)
+    steps = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
+    updated_at = db.Column(db.DateTime, default=now_amsterdam, onupdate=now_amsterdam)
