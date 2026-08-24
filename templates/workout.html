@@ -197,7 +197,8 @@
     </div>
     {% endif %}
 
-    <!-- Daily Steps -->
+    <!-- Daily Steps - hidden while a workout is in progress -->
+    {% if not active_session %}
     <div class="add-set-card">
         <h2>Daily Steps 👟</h2>
         <form method="POST" action="{{ url_for('steps_log') }}" class="workout-form">
@@ -235,6 +236,7 @@
         </p>
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
 <script>
