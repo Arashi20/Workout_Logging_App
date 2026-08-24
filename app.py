@@ -371,7 +371,12 @@ def workout():
             if is_pr:
                 pr_set_ids.add(log.id)
 
-    steps_today, steps_avg_7d, steps_avg_30d = get_step_summary(current_user.id)
+    # The steps card is only rendered when no workout is in progress, so skip
+    # the queries entirely during a session.
+    if active_session:
+        steps_today = steps_avg_7d = steps_avg_30d = None
+    else:
+        steps_today, steps_avg_7d, steps_avg_30d = get_step_summary(current_user.id)
 
     return render_template('workout.html',
                          active_session=active_session,
