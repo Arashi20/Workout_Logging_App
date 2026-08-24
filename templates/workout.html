@@ -196,6 +196,45 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Daily Steps -->
+    <div class="add-set-card">
+        <h2>Daily Steps 👟</h2>
+        <form method="POST" action="{{ url_for('steps_log') }}" class="workout-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="steps">Steps today</label>
+                    <input type="number" id="steps" name="steps" min="0" max="200000" step="1"
+                           placeholder="e.g. 8500" required
+                           value="{{ steps_today if steps_today is not none else '' }}">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="submit" class="btn btn-primary">{% if steps_today is not none %}Update{% else %}Save{% endif %}</button>
+                </div>
+            </div>
+        </form>
+        {% if steps_today is not none %}
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -0.5rem;">
+            Today's count is saved — submitting again overwrites it.
+        </p>
+        {% endif %}
+
+        <div class="steps-averages">
+            <div class="steps-average">
+                <div class="steps-average-value">{% if steps_avg_7d is not none %}{{ '{:,}'.format(steps_avg_7d) }}{% else %}—{% endif %}</div>
+                <div class="steps-average-label">Avg / day · past 7 days</div>
+            </div>
+            <div class="steps-average">
+                <div class="steps-average-value">{% if steps_avg_30d is not none %}{{ '{:,}'.format(steps_avg_30d) }}{% else %}—{% endif %}</div>
+                <div class="steps-average-label">Avg / day · past 30 days</div>
+            </div>
+        </div>
+        {% if steps_avg_7d is none and steps_avg_30d is none %}
+        <p style="color: var(--text-secondary); text-align: center; margin-top: 1rem;">
+            Log your steps to start building an average.
+        </p>
+        {% endif %}
+    </div>
 </div>
 
 <script>
