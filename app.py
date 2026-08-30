@@ -2163,6 +2163,9 @@ def nutrition_log_delete(log_id):
     return redirect(url_for('nutrition'))
 
 
+DISCIPLINE_HISTORY_PAGE_SIZE = 15
+
+
 @app.route('/discipline')
 @login_required
 def discipline():
@@ -2225,7 +2228,9 @@ def discipline():
     else:
         progress_pct = 100.0
 
-    history = sorted(completed, key=lambda l: l.start_date, reverse=True)
+    history_all = sorted(completed, key=lambda l: l.start_date, reverse=True)
+    history = history_all[:DISCIPLINE_HISTORY_PAGE_SIZE]
+    history_has_more = len(history_all) > len(history)
 
     return render_template('discipline.html',
         active=active,
@@ -2239,7 +2244,41 @@ def discipline():
         progress_pct=progress_pct,
         next_milestone=next_milestone,
         history=history,
+        history_has_more=history_has_more,
+        history_page_size=DISCIPLINE_HISTORY_PAGE_SIZE,
     )
+
+
+@app.route('/discipline/history')
+@login_required
+def discipline_history():
+    """Return a page of past attempts for the 'See more' button."""
+    try:
+        offset = max(0, int(request.args.get('offset', 0)))
+    except (TypeError, ValueError):
+        offset = 0
+    limit = DISCIPLINE_HISTORY_PAGE_SIZE
+
+    query = (StreakLog.query
+             .filter(StreakLog.user_id == current_user.id,
+                     StreakLog.end_date.isnot(None))
+             .order_by(StreakLog.start_date.desc()))
+    rows = query.offset(offset).limit(limit + 1).all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+
+    return jsonify({
+        'entries': [{
+            'id': s.id,
+            'start': s.start_date.strftime('%d %b %Y'),
+            'end': s.end_date.strftime('%d %b %Y'),
+            'days': (s.end_date - s.start_date).days,
+            'note': s.relapse_note or '',
+            'delete_url': url_for('discipline_delete', streak_id=s.id),
+        } for s in rows],
+        'has_more': has_more,
+        'next_offset': offset + len(rows),
+    })
 
 
 @app.route('/discipline/start', methods=['POST'])

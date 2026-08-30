@@ -120,7 +120,7 @@
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="history-tbody">
                     {% for s in history %}
                     <tr>
                         <td>{{ s.start_date.strftime('%d %b %Y') }}</td>
@@ -136,6 +136,11 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div id="history-more-wrap" style="text-align: center; margin-top: 1rem;{% if not history_has_more %} display: none;{% endif %}">
+            <button type="button" class="btn btn-secondary" id="history-more-btn"
+                data-url="{{ url_for('discipline_history') }}"
+                data-offset="{{ history|length }}">See more</button>
         </div>
     </div>
     {% endif %}
@@ -201,13 +206,15 @@
         const deleteForm = document.getElementById('delete-streak-form');
         const deleteCancel = document.getElementById('delete-streak-cancel');
 
-        if (deleteModal && deleteForm && deleteCancel) {
-            document.querySelectorAll('.delete-streak-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    deleteForm.action = this.getAttribute('data-delete-url');
-                    deleteModal.classList.add('active');
-                });
+        function bindDeleteButton(button) {
+            button.addEventListener('click', function() {
+                deleteForm.action = this.getAttribute('data-delete-url');
+                deleteModal.classList.add('active');
             });
+        }
+
+        if (deleteModal && deleteForm && deleteCancel) {
+            document.querySelectorAll('.delete-streak-btn').forEach(bindDeleteButton);
 
             deleteCancel.addEventListener('click', function() {
                 deleteModal.classList.remove('active');
@@ -217,6 +224,82 @@
                 if (e.target === deleteModal) {
                     deleteModal.classList.remove('active');
                 }
+            });
+        }
+
+        // Load older attempts in pages of 15
+        const moreBtn = document.getElementById('history-more-btn');
+        const moreWrap = document.getElementById('history-more-wrap');
+        const tbody = document.getElementById('history-tbody');
+
+        if (moreBtn && tbody) {
+            moreBtn.addEventListener('click', function() {
+                if (moreBtn.disabled) return;
+                moreBtn.disabled = true;
+                moreBtn.textContent = 'Loading...';
+
+                const offset = parseInt(moreBtn.getAttribute('data-offset'), 10) || 0;
+                fetch(moreBtn.getAttribute('data-url') + '?offset=' + offset, {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Request failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        data.entries.forEach(entry => {
+                            const row = document.createElement('tr');
+
+                            const start = document.createElement('td');
+                            start.textContent = entry.start;
+                            row.appendChild(start);
+
+                            const end = document.createElement('td');
+                            end.textContent = entry.end;
+                            row.appendChild(end);
+
+                            const days = document.createElement('td');
+                            days.textContent = entry.days;
+                            row.appendChild(days);
+
+                            const note = document.createElement('td');
+                            note.className = 'notes-cell';
+                            const noteText = document.createElement('span');
+                            noteText.className = 'notes-text';
+                            noteText.textContent = entry.note || '\u2014';
+                            note.appendChild(noteText);
+                            note.addEventListener('click', function() {
+                                this.classList.toggle('expanded');
+                            });
+                            row.appendChild(note);
+
+                            const actions = document.createElement('td');
+                            const del = document.createElement('button');
+                            del.type = 'button';
+                            del.className = 'btn btn-danger delete-streak-btn';
+                            del.style.padding = '0.25rem 0.6rem';
+                            del.style.fontSize = '0.8rem';
+                            del.setAttribute('data-delete-url', entry.delete_url);
+                            del.textContent = '\u2715';
+                            if (deleteModal && deleteForm) bindDeleteButton(del);
+                            actions.appendChild(del);
+                            row.appendChild(actions);
+
+                            tbody.appendChild(row);
+                        });
+
+                        moreBtn.setAttribute('data-offset', data.next_offset);
+                        if (data.has_more) {
+                            moreBtn.disabled = false;
+                            moreBtn.textContent = 'See more';
+                        } else {
+                            moreWrap.style.display = 'none';
+                        }
+                    })
+                    .catch(() => {
+                        moreBtn.disabled = false;
+                        moreBtn.textContent = 'Try again';
+                    });
             });
         }
     });
