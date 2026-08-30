@@ -1031,6 +1031,16 @@ body {
     max-height: 350px;
 }
 
+/* Weight and body fat each get their own chart, so keep them a little
+   shorter than a single full-size chart. */
+.chart-container-split {
+    height: 320px;
+}
+
+.chart-container-split canvas {
+    max-height: 260px;
+}
+
 .weight-logs {
     background-color: var(--card-bg);
     padding: 1.5rem;
