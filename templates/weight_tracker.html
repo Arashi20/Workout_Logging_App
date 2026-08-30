@@ -45,9 +45,14 @@
     </div>
 
     {% if weight_logs %}
-    <div class="chart-container">
-        <h2>Progress Chart</h2>
+    <div class="chart-container chart-container-split">
+        <h2>Weight Over Time</h2>
         <canvas id="weightChart"></canvas>
+    </div>
+
+    <div class="chart-container chart-container-split" id="body-fat-chart-card" style="display: none;">
+        <h2>Body Fat % Over Time</h2>
+        <canvas id="bodyFatChart"></canvas>
     </div>
 
     <div class="weight-logs">
@@ -90,7 +95,6 @@
         fetch('{{ url_for("weight_tracker_data") }}')
             .then(response => response.json())
             .then(data => {
-                const ctx = document.getElementById('weightChart').getContext('2d');
                 // Only include the year in axis labels once the logs span more than
                 // one year, so single-year charts stay short and uncluttered.
                 const spansMultipleYears = new Set(data.dates.map(d => d.slice(0, 4))).size > 1;
@@ -99,62 +103,66 @@
                     const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     return spansMultipleYears ? `${label} '${dateStr.slice(2, 4)}` : label;
                 });
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: formattedDates,
-                        datasets: [
-                            {
-                                label: 'Weight (kg)',
-                                data: data.weights,
-                                borderColor: '#e74c3c',
-                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+
+                // Weight and body fat % live on very different scales, so each gets
+                // its own chart and its own y-axis instead of sharing one.
+                function buildChart(canvasId, label, values, color, fill) {
+                    new Chart(document.getElementById(canvasId).getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: formattedDates,
+                            datasets: [{
+                                label: label,
+                                data: values,
+                                borderColor: color,
+                                backgroundColor: fill,
                                 tension: 0.3
-                            },
-                            {
-                                label: 'Body Fat %',
-                                data: data.body_fat,
-                                borderColor: '#3498db',
-                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                                tension: 0.3
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    // Always show the unambiguous full date, even when
-                                    // the axis label is abbreviated.
-                                    title: items => new Date(data.dates[items[0].dataIndex] + 'T00:00:00')
-                                        .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                                }
-                            }
+                            }]
                         },
-                        scales: {
-                            x: {
-                                ticks: {
-                                    maxRotation: 0,
-                                    autoSkip: true,
-                                    // Keeps a clear gap between labels; the default
-                                    // (3px) lets them sit flush on narrow screens.
-                                    autoSkipPadding: 12
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        // Always show the unambiguous full date, even when
+                                        // the axis label is abbreviated.
+                                        title: items => new Date(data.dates[items[0].dataIndex] + 'T00:00:00')
+                                            .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                                    }
                                 }
                             },
-                            y: {
-                                beginAtZero: false
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        maxRotation: 0,
+                                        autoSkip: true,
+                                        // Keeps a clear gap between labels; the default
+                                        // (3px) lets them sit flush on narrow screens.
+                                        autoSkipPadding: 12
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: false
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
+
+                buildChart('weightChart', 'Weight (kg)', data.weights, '#e74c3c', 'rgba(231, 76, 60, 0.1)');
+
+                // Body fat is optional per log, so only show its chart when logged.
+                if (data.body_fat.some(v => v !== null && v !== undefined)) {
+                    document.getElementById('body-fat-chart-card').style.display = '';
+                    buildChart('bodyFatChart', 'Body Fat %', data.body_fat, '#3498db', 'rgba(52, 152, 219, 0.1)');
+                }
             });
-        
+
         // Add click handlers for notes cells to expand on small screens
         document.querySelectorAll('td.notes-cell').forEach(cell => {
             cell.addEventListener('click', function() {
