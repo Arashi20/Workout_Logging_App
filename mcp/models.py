@@ -107,6 +107,16 @@ class ProteinLog(db.Model):
     preset_id = db.Column(db.Integer, db.ForeignKey('food_presets.id'))
 
 
+class DailySteps(db.Model):
+    """One row per user per calendar day; the day's count is overwritten."""
+    __tablename__ = 'daily_steps'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, index=True)
+    steps = db.Column(db.Integer, nullable=False)
+    updated_at = db.Column(db.DateTime)
+
+
 class StreakLog(db.Model):
     __tablename__ = 'streak_logs'
     id = db.Column(db.Integer, primary_key=True)

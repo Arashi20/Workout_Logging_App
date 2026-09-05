@@ -10,6 +10,7 @@ from config import TIMEZONE_NAME, now_amsterdam
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
     DEFAULT_NUTRITION_DAYS,
+    DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
     DEFAULT_WORKOUT_DAYS,
     DEFAULT_WORKOUT_SESSIONS,
@@ -17,6 +18,7 @@ from data import (
     collect_discipline,
     collect_nutrition,
     collect_prs,
+    collect_steps,
     collect_weight,
     collect_workouts,
     iso,
@@ -54,6 +56,13 @@ def discipline_endpoint(user):
 def nutrition_endpoint(user):
     days = clamp_int(request.args.get('days'), DEFAULT_NUTRITION_DAYS, maximum=90)
     return jsonify(collect_nutrition(user.id, days))
+
+
+@rest_api.route('/steps', methods=['GET'])
+@token_required
+def steps_endpoint(user):
+    days = clamp_int(request.args.get('days'), DEFAULT_STEP_DAYS, maximum=365)
+    return jsonify(collect_steps(user.id, days))
 
 
 @rest_api.route('/prs', methods=['GET'])

@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 from config import TIMEZONE_NAME, now_amsterdam
 from models import (
     EXERCISE_TYPES,
+    DailySteps,
     FoodPreset,
     PersonalRecord,
     ProteinLog,
@@ -28,6 +29,7 @@ PROTEIN_TARGET_G = 140
 
 DEFAULT_WEIGHT_LIMIT = 60
 DEFAULT_WORKOUT_DAYS = 7
+DEFAULT_STEP_DAYS = 30
 DEFAULT_WORKOUT_SESSIONS = 20
 DEFAULT_NUTRITION_DAYS = 7
 DEFAULT_DISCIPLINE_HISTORY = 20
@@ -347,6 +349,51 @@ def collect_nutrition(user_id, days=DEFAULT_NUTRITION_DAYS):
             'protein_per_serving_g': p.protein_per_serving,
             'serving_unit': p.serving_unit,
         } for p in presets],
+    }
+
+
+def collect_steps(user_id, days=DEFAULT_STEP_DAYS):
+    """Daily step counts, plus the averages the workout page shows.
+
+    Averages are taken over the days that actually have an entry, matching the
+    app: a day with no entry is unknown, not a zero that drags the mean down.
+    """
+    today = now_amsterdam().date()
+
+    rows = (DailySteps.query
+            .filter(DailySteps.user_id == user_id,
+                    DailySteps.date >= today - timedelta(days=days - 1),
+                    DailySteps.date <= today)
+            .order_by(DailySteps.date.desc())
+            .all())
+    by_date = {row.date: row.steps for row in rows}
+
+    def average_over(window):
+        counts = [steps for date, steps in by_date.items()
+                  if date > today - timedelta(days=window)]
+        return round(sum(counts) / len(counts)) if counts else None
+
+    logged = [{'date': row.date.isoformat(), 'steps': row.steps} for row in rows]
+    best = max(rows, key=lambda r: r.steps) if rows else None
+
+    return {
+        'timezone': TIMEZONE_NAME,
+        'date': today.isoformat(),
+        'today_steps': by_date.get(today),
+        'averages': {
+            'seven_day': average_over(7),
+            'thirty_day': average_over(30),
+            'window': average_over(days),
+        },
+        'window': {
+            'days': days,
+            'from': (today - timedelta(days=days - 1)).isoformat(),
+            'to': today.isoformat(),
+            'days_logged': len(rows),
+            'total_steps': sum(by_date.values()),
+            'best_day': {'date': best.date.isoformat(), 'steps': best.steps} if best else None,
+        },
+        'daily': logged,
     }
 
 

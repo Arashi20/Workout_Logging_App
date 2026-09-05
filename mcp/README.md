@@ -1,8 +1,8 @@
 # Workout Log Connector (MCP)
 
 A **standalone, read-only** service that exposes the workout app -
-**workouts**, **weight**, **discipline**, **nutrition** and **PRs** - to Claude
-as a custom connector, and to scripts as a plain REST API.
+**workouts**, **weight**, **discipline**, **nutrition**, **steps** and **PRs** -
+to Claude as a custom connector, and to scripts as a plain REST API.
 
 It deploys as its own Railway service pointing at this folder, next to the main
 app, and reads the same Postgres database.
@@ -81,6 +81,7 @@ claude mcp add --transport http workout-log https://your-connector.up.railway.ap
 | `get_weight` | Weight / body fat / visceral fat history, and the change over the window |
 | `get_discipline` | Current streak, best streak, total clean days, milestones, past attempts |
 | `get_nutrition` | Today's protein entries vs target, per-day totals, 30-day average, presets |
+| `get_steps` | Daily step counts with the 7- and 30-day averages, over the days that have an entry |
 | `get_personal_records` | All-time best per exercise grouped by type, with an estimated 1RM |
 
 `get_workouts` and `get_personal_records` answer different questions: the first
@@ -96,6 +97,7 @@ curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railw
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/weight?limit=30"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/discipline?limit=20"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/nutrition?days=7"
+curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/steps?days=30"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/prs?exercise=bench"
 ```
 
@@ -128,7 +130,7 @@ saying exactly what to change.
 |---|---|
 | `server.py` | App factory, Host allow-list, `/`, `/healthz`, `/whoami`. Gunicorn entrypoint. |
 | `config.py` | Every environment variable, in one place |
-| `models.py` | Narrow read-only mirror of the nine tables this reads |
+| `models.py` | Narrow read-only mirror of the ten tables this reads |
 | `data.py` | The `collect_*` read queries behind every tool and endpoint |
 | `auth.py` | Bearer token resolution shared by both surfaces |
 | `mcp_endpoint.py` | `POST /mcp` - JSON-RPC, tool definitions, dispatch |

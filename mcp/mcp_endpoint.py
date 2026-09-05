@@ -17,6 +17,7 @@ from auth import authenticate
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
     DEFAULT_NUTRITION_DAYS,
+    DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
     DEFAULT_WORKOUT_DAYS,
     DEFAULT_WORKOUT_SESSIONS,
@@ -24,6 +25,7 @@ from data import (
     collect_discipline,
     collect_nutrition,
     collect_prs,
+    collect_steps,
     collect_weight,
     collect_workouts,
 )
@@ -144,6 +146,28 @@ TOOLS = [
         'annotations': READ_ONLY_HINTS,
     },
     {
+        'name': 'get_steps',
+        'title': 'Daily steps',
+        'description': (
+            "Read the daily step counts logged on the workout page: today's steps, "
+            'the 7-day and 30-day averages, and the per-day series. Averages cover '
+            'only the days that have an entry, so a day that was never logged reads '
+            'as unknown rather than as zero steps.'
+        ),
+        'inputSchema': {
+            'type': 'object',
+            'properties': {
+                'days': {
+                    'type': 'integer',
+                    'description': f'How many days back to return, ending today (1-365, default {DEFAULT_STEP_DAYS}).',
+                    'minimum': 1, 'maximum': 365,
+                },
+            },
+            'additionalProperties': False,
+        },
+        'annotations': READ_ONLY_HINTS,
+    },
+    {
         'name': 'get_personal_records',
         'title': 'Personal records',
         'description': (
@@ -188,6 +212,8 @@ def run_tool(name, arguments, user):
     if name == 'get_nutrition':
         return collect_nutrition(
             user.id, clamp_int(arguments.get('days'), DEFAULT_NUTRITION_DAYS, maximum=90))
+    if name == 'get_steps':
+        return collect_steps(user.id, clamp_int(arguments.get('days'), DEFAULT_STEP_DAYS, maximum=365))
     if name == 'get_personal_records':
         exercise = arguments.get('exercise')
         return collect_prs(user.id, exercise if isinstance(exercise, str) else None)
@@ -223,8 +249,9 @@ def handle_message(message, user):
                 'Read-only access to a personal workout log. get_workouts is the '
                 'training history (sessions and sets actually performed); '
                 'get_personal_records is the all-time best per exercise; '
-                'get_weight, get_discipline and get_nutrition cover body weight, '
-                'streaks and protein. Nothing here can change the log.'
+                'get_weight, get_discipline, get_nutrition and get_steps cover '
+                'body weight, streaks, protein and daily steps. Nothing here can '
+                'change the log.'
             ),
         })
 
