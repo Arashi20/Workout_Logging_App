@@ -9,6 +9,7 @@ main app.
 """
 
 import os
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -76,13 +77,36 @@ def create_app():
 
     @app.route('/healthz', methods=['GET'])
     def healthz():
-        """Liveness probe: does the shared database answer?"""
+        """Liveness probe, and the first place to look when Claude cannot connect.
+
+        Reports the settings that decide whether the OAuth handshake can work -
+        the base URL Claude is handed and the host this request arrived on -
+        without exposing any secret.
+        """
+        base = config.public_base_url(request)
+        report = {
+            'status': 'ok',
+            'public_base_url': base,
+            'request_host': request.host,
+            'public_url_matches_request': urlparse(base).hostname == request.host.split(':')[0],
+            'allowed_hosts': config.allowed_hosts() or 'any',
+            'oauth_enabled': config.oauth_enabled(),
+            'dynamic_registration': config.dynamic_registration_enabled(),
+        }
+        warning = config.public_url_warning()
+        if warning:
+            report['warning'] = warning
+
         try:
             db.session.execute(db.text('SELECT 1'))
-            return jsonify({'status': 'ok', 'database': 'reachable'})
+            report['database'] = 'reachable'
         except Exception:
             app.logger.exception('Health check could not reach the database')
-            return jsonify({'status': 'degraded', 'database': 'unreachable'}), 503
+            report['status'] = 'degraded'
+            report['database'] = 'unreachable'
+            return jsonify(report), 503
+
+        return jsonify(report)
 
     @app.route('/whoami', methods=['GET'])
     def whoami():
@@ -91,6 +115,10 @@ def create_app():
         if error is not None:
             return error
         return jsonify({'user': user.username, 'scope': 'read'})
+
+    warning = config.public_url_warning()
+    if warning:
+        app.logger.warning('Connector misconfiguration: %s', warning)
 
     return app
 

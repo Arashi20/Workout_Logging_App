@@ -39,8 +39,8 @@ Not a convention - it is structural:
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway reference to the same database) |
 | `MCP_SECRET_KEY` | Any long random string. Signs the tokens this connector issues; rotating it revokes them all. Does not have to match the main app. |
 | `ADMIN_USERNAME` | Same username as the main app - it selects whose data is exposed |
-| `MCP_PUBLIC_URL` | This service's URL, e.g. `https://claude-connector.up.railway.app` |
-| `MCP_ALLOWED_HOSTS` | The same hostname, without the scheme |
+| `MCP_PUBLIC_URL` | Optional on Railway - it defaults to the domain Railway injects. Set it only for a custom domain, e.g. `https://connector.example.com` |
+| `MCP_ALLOWED_HOSTS` | Optional on Railway - same default. The Railway domain is always accepted regardless. |
 
 Optional:
 
@@ -92,8 +92,28 @@ curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railw
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/prs?exercise=bench"
 ```
 
-Unauthenticated helpers: `GET /` describes the service, `GET /healthz` checks
-the database connection.
+Unauthenticated helpers: `GET /` describes the service, and `GET /healthz`
+reports the database connection plus the settings that decide whether the OAuth
+handshake can work - open it first when Claude cannot connect:
+
+```json
+{
+  "status": "ok",
+  "database": "reachable",
+  "public_base_url": "https://your-connector.up.railway.app",
+  "request_host": "your-connector.up.railway.app",
+  "public_url_matches_request": true,
+  "allowed_hosts": ["your-connector.up.railway.app"],
+  "oauth_enabled": true,
+  "dynamic_registration": true
+}
+```
+
+`public_url_matches_request: false` is the usual cause of "Couldn't register
+with the sign-in service": every OAuth endpoint Claude is told to call is built
+from `public_base_url`, so if it names a host that isn't this service, the
+registration request never arrives. The response carries a `warning` field
+saying exactly what to change.
 
 ## Files
 
