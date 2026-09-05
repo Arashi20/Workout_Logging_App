@@ -123,6 +123,15 @@ The app includes several performance optimizations for production use:
 - **Pre-ping**: Database connections are verified before use to catch connection issues early
 - **Statement Timeout**: PostgreSQL queries have a 30-second timeout to prevent hanging queries
 
+## Read-Only Connector for Chatbots (MCP)
+
+The `mcp/` folder is a separate, **read-only** service that exposes the weight,
+discipline, nutrition and PR data to Claude as a custom connector (and to
+scripts as a REST API). It deploys as its own Railway service pointing at that
+folder and reads the same Postgres database as this app - it cannot write to it.
+
+See [`mcp/README.md`](mcp/README.md) for the setup.
+
 ## Usage
 
 1. Log in with your username and password
