@@ -10,7 +10,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog, DailySteps
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog, DailySteps, EXERCISE_TYPES
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Engine
@@ -21,7 +21,6 @@ import pytz
 load_dotenv()
 
 # Constants
-EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio', 'Compound']
 AMSTERDAM_TZ = pytz.timezone('Europe/Amsterdam')
 
 def now_amsterdam():
@@ -96,6 +95,16 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# Read-only API + MCP connector for chatbots.
+# These blueprints register GET-only routes and never write to the database.
+from read_api import read_api as read_api_blueprint
+from mcp_server import mcp_bp
+from mcp_oauth import mcp_oauth
+
+app.register_blueprint(read_api_blueprint)
+app.register_blueprint(mcp_bp)
+app.register_blueprint(mcp_oauth)
 
 # Auto-initialize database and admin user on startup
 def init_app():

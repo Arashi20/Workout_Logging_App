@@ -5,6 +5,9 @@ import pytz
 
 db = SQLAlchemy()
 
+# Exercise categories, in the order pages group them by
+EXERCISE_TYPES = ['Pull', 'Push', 'Legs', 'Core', 'Cardio', 'Compound']
+
 # Define Amsterdam timezone
 AMSTERDAM_TZ = pytz.timezone('Europe/Amsterdam')
 
