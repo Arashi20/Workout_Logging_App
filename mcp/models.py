@@ -34,6 +34,35 @@ class Exercise(db.Model):
     is_cardio = db.Column(db.Boolean, default=False, nullable=False)
 
 
+class WorkoutSession(db.Model):
+    __tablename__ = 'workout_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, index=True)
+    duration_minutes = db.Column(db.Integer)
+
+    workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True)
+
+
+class WorkoutLog(db.Model):
+    """One set within a session."""
+    __tablename__ = 'workout_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.id'), nullable=False, index=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False, index=True)
+    set_number = db.Column(db.Integer, nullable=False)
+    reps = db.Column(db.Integer)
+    weight = db.Column(db.Float)
+    bodyweight_kg = db.Column(db.Float)
+    calories = db.Column(db.Float)
+    time_minutes = db.Column(db.Float)
+    set_type = db.Column(db.String(20))   # 'warmup' or 'working'
+    created_at = db.Column(db.DateTime)
+
+    exercise = db.relationship('Exercise', lazy='joined')
+
+
 class PersonalRecord(db.Model):
     __tablename__ = 'personal_records'
     id = db.Column(db.Integer, primary_key=True)

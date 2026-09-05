@@ -125,9 +125,9 @@ The app includes several performance optimizations for production use:
 
 ## Read-Only Connector for Chatbots (MCP)
 
-The `mcp/` folder is a separate, **read-only** service that exposes the weight,
-discipline, nutrition and PR data to Claude as a custom connector (and to
-scripts as a REST API). It deploys as its own Railway service pointing at that
+The `mcp/` folder is a separate, **read-only** service that exposes the workout
+history, weight, discipline, nutrition and PR data to Claude as a custom
+connector (and to scripts as a REST API). It deploys as its own Railway service pointing at that
 folder and reads the same Postgres database as this app - it cannot write to it.
 
 See [`mcp/README.md`](mcp/README.md) for the setup.

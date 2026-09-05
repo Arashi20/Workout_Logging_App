@@ -9,6 +9,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from config import TIMEZONE_NAME, now_amsterdam
 from models import (
@@ -18,12 +19,16 @@ from models import (
     ProteinLog,
     StreakLog,
     WeightLog,
+    WorkoutLog,
+    WorkoutSession,
     db,
 )
 
 PROTEIN_TARGET_G = 140
 
 DEFAULT_WEIGHT_LIMIT = 60
+DEFAULT_WORKOUT_DAYS = 7
+DEFAULT_WORKOUT_SESSIONS = 20
 DEFAULT_NUTRITION_DAYS = 7
 DEFAULT_DISCIPLINE_HISTORY = 20
 MAX_LIMIT = 500
@@ -58,6 +63,141 @@ def estimated_one_rm(weight, reps):
     if not weight or not reps:
         return None
     return round(weight * (1 + reps / 30.0), 1)
+
+
+def effective_volume(log):
+    """Volume for one set, counting bodyweight the way the app's history page does."""
+    if log.reps is None:
+        return 0.0
+    return ((log.bodyweight_kg or 0) + (log.weight or 0)) * log.reps
+
+
+def _set_payload(log):
+    return {
+        'exercise': log.exercise.name,
+        'set_number': log.set_number,
+        'set_type': log.set_type,
+        'reps': log.reps,
+        'weight_kg': log.weight,
+        'bodyweight_kg': log.bodyweight_kg,
+        'volume_kg': round(effective_volume(log), 1) or None,
+        'calories': log.calories,
+        'time_minutes': log.time_minutes,
+        'logged_at': iso(log.created_at),
+    }
+
+
+def collect_workouts(user_id, days=DEFAULT_WORKOUT_DAYS, exercise=None,
+                     limit=DEFAULT_WORKOUT_SESSIONS):
+    """Logged workout sessions and their individual sets, newest first.
+
+    This is the training log itself - what was actually performed on which day -
+    as opposed to collect_prs, which only reports each exercise's best ever.
+    Filtering by exercise answers "did I train squats this week": sessions that
+    contain a matching exercise, with the matching sets.
+    """
+    today = now_amsterdam().date()
+    window_start = start_of_today() - timedelta(days=days - 1)
+
+    # Eager-load sets and their exercises: without this each session costs a
+    # query per set to name its exercise.
+    query = (WorkoutSession.query
+             .options(selectinload(WorkoutSession.workout_logs)
+                      .joinedload(WorkoutLog.exercise))
+             .filter(WorkoutSession.user_id == user_id,
+                     WorkoutSession.start_time >= window_start))
+
+    finished = (query.filter(WorkoutSession.end_time.isnot(None))
+                .order_by(WorkoutSession.start_time.desc())
+                .limit(limit)
+                .all())
+
+    needle = exercise.strip().lower() if exercise else None
+
+    sessions = []
+    exercise_totals = defaultdict(lambda: {'sessions': 0, 'working_sets': 0,
+                                           'total_reps': 0, 'best_weight_kg': None})
+
+    for session in finished:
+        logs = sorted(session.workout_logs, key=lambda l: (l.created_at or session.start_time, l.id))
+        if not logs:
+            continue
+
+        names_in_order = []
+        for log in logs:
+            if log.exercise.name not in names_in_order:
+                names_in_order.append(log.exercise.name)
+
+        matching = [l for l in logs if needle in l.exercise.name.lower()] if needle else logs
+        if needle and not matching:
+            continue
+
+        for name in {l.exercise.name for l in matching}:
+            exercise_totals[name]['sessions'] += 1
+        for log in matching:
+            if log.set_type == 'working':
+                totals = exercise_totals[log.exercise.name]
+                totals['working_sets'] += 1
+                totals['total_reps'] += log.reps or 0
+                if log.weight is not None:
+                    best = totals['best_weight_kg']
+                    totals['best_weight_kg'] = log.weight if best is None else max(best, log.weight)
+
+        working = [l for l in logs if l.set_type == 'working']
+        sessions.append({
+            'id': session.id,
+            'date': session.start_time.date().isoformat(),
+            'started_at': iso(session.start_time),
+            'ended_at': iso(session.end_time),
+            'duration_minutes': session.duration_minutes,
+            'exercises': names_in_order,
+            'working_sets': len(working),
+            'total_volume_kg': round(sum(effective_volume(l) for l in working
+                                         if not l.exercise.is_cardio), 1),
+            'sets': [_set_payload(l) for l in matching],
+            'sets_shown': 'matching only' if needle else 'all',
+        })
+
+    # An unfinished session is not in the history above, but "did I train today"
+    # should still see it.
+    active = (query.filter(WorkoutSession.end_time.is_(None))
+              .order_by(WorkoutSession.start_time.desc())
+              .first())
+    active_payload = None
+    if active:
+        active_logs = sorted(active.workout_logs, key=lambda l: (l.created_at or active.start_time, l.id))
+        active_payload = {
+            'id': active.id,
+            'started_at': iso(active.start_time),
+            'exercises': list(dict.fromkeys(l.exercise.name for l in active_logs)),
+            'sets_logged': len(active_logs),
+        }
+
+    summary = {
+        'session_count': len(sessions),
+        'working_sets': sum(s['working_sets'] for s in sessions),
+        'total_volume_kg': round(sum(s['total_volume_kg'] for s in sessions), 1),
+        'days_trained': len({s['date'] for s in sessions}),
+        'exercises_trained': sorted(
+            ({'exercise': name, **totals} for name, totals in exercise_totals.items()),
+            key=lambda e: (-e['working_sets'], e['exercise'])),
+    }
+    if needle:
+        summary['matched_exercise_filter'] = bool(sessions)
+
+    return {
+        'timezone': TIMEZONE_NAME,
+        'filter': exercise,
+        'window': {
+            'days': days,
+            'from': (today - timedelta(days=days - 1)).isoformat(),
+            'to': today.isoformat(),
+        },
+        'summary': summary,
+        'sessions': sessions,
+        'sessions_truncated': len(finished) == limit,
+        'active_session': active_payload,
+    }
 
 
 def collect_weight(user_id, limit=DEFAULT_WEIGHT_LIMIT):

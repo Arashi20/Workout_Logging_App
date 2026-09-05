@@ -1,8 +1,8 @@
 # Workout Log Connector (MCP)
 
-A **standalone, read-only** service that exposes four areas of the workout app -
-**weight**, **discipline**, **nutrition** and **PRs** - to Claude as a custom
-connector, and to scripts as a plain REST API.
+A **standalone, read-only** service that exposes the workout app -
+**workouts**, **weight**, **discipline**, **nutrition** and **PRs** - to Claude
+as a custom connector, and to scripts as a plain REST API.
 
 It deploys as its own Railway service pointing at this folder, next to the main
 app, and reads the same Postgres database.
@@ -77,15 +77,22 @@ claude mcp add --transport http workout-log https://your-connector.up.railway.ap
 
 | Tool | Returns |
 |---|---|
+| `get_workouts` | The training log: sessions in a recent window with their individual sets (exercise, reps, weight, warmup vs working, cardio calories/time), per-session volume, and which exercises were trained. Filter by exercise to answer "did I train squats this week". |
 | `get_weight` | Weight / body fat / visceral fat history, and the change over the window |
 | `get_discipline` | Current streak, best streak, total clean days, milestones, past attempts |
 | `get_nutrition` | Today's protein entries vs target, per-day totals, 30-day average, presets |
-| `get_personal_records` | Current PR per exercise grouped by type, with an estimated 1RM |
+| `get_personal_records` | All-time best per exercise grouped by type, with an estimated 1RM |
+
+`get_workouts` and `get_personal_records` answer different questions: the first
+is what was actually performed and when, the second is only each exercise's best
+ever. A question about recent training needs `get_workouts` - a PR alone cannot
+say whether a lift was trained this week.
 
 ## REST
 
 ```bash
 curl -H "Authorization: Bearer $API_READ_TOKEN" https://your-connector.up.railway.app/api/v1/ping
+curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/workouts?days=7&exercise=squat"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/weight?limit=30"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/discipline?limit=20"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/nutrition?days=7"
@@ -121,7 +128,7 @@ saying exactly what to change.
 |---|---|
 | `server.py` | App factory, Host allow-list, `/`, `/healthz`, `/whoami`. Gunicorn entrypoint. |
 | `config.py` | Every environment variable, in one place |
-| `models.py` | Narrow read-only mirror of the tables this reads |
+| `models.py` | Narrow read-only mirror of the nine tables this reads |
 | `data.py` | The `collect_*` read queries behind every tool and endpoint |
 | `auth.py` | Bearer token resolution shared by both surfaces |
 | `mcp_endpoint.py` | `POST /mcp` - JSON-RPC, tool definitions, dispatch |
