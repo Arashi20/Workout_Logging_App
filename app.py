@@ -14,7 +14,7 @@ from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecor
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import click
 import pytz
 
@@ -97,12 +97,45 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+def resync_id_sequence(model):
+    """Fast-forward a table's Postgres id sequence past the largest existing id.
+
+    Rows inserted with an explicit id (a manual backfill, a restore) don't advance
+    the sequence, so the next auto-generated id collides with them and the INSERT
+    fails on the primary key. Each failed attempt burns one sequence value, which
+    is why such an error clears itself after enough retries. No-op on SQLite,
+    which has no sequences.
+    """
+    if db.engine.dialect.name != 'postgresql':
+        return False
+
+    table = model.__tablename__
+    try:
+        db.session.execute(text(
+            "SELECT setval(pg_get_serial_sequence(:table, 'id'), "
+            f"COALESCE((SELECT MAX(id) FROM {table}), 0) + 1, false)"
+        ), {'table': table})
+        db.session.commit()
+        return True
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f'Could not resync id sequence for {table}: {e}')
+        return False
+
+
 # Auto-initialize database and admin user on startup
 def init_app():
     """Initialize database tables and create admin user if needed"""
     with app.app_context():
         # Create all tables if they don't exist
         db.create_all()
+
+        # Keep id sequences ahead of the data so inserts can't collide on the
+        # primary key (see resync_id_sequence).
+        for model in (User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord,
+                      WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog,
+                      DailySteps):
+            resync_id_sequence(model)
         
         # Create admin user if it doesn't exist
         username = os.getenv('ADMIN_USERNAME', 'admin')
@@ -433,7 +466,7 @@ def steps_log():
 
     today = now_amsterdam().date()
 
-    try:
+    def write_steps():
         entry = DailySteps.query.filter_by(user_id=current_user.id, date=today).first()
         if entry:
             entry.steps = steps
@@ -441,6 +474,20 @@ def steps_log():
             entry = DailySteps(user_id=current_user.id, date=today, steps=steps)
             db.session.add(entry)
         db.session.commit()
+
+    try:
+        try:
+            write_steps()
+        except IntegrityError as e:
+            # A stale id sequence hands out an id that's already taken. Repair the
+            # sequence and write once more rather than making the user retry.
+            db.session.rollback()
+            if 'daily_steps_pkey' not in str(e.orig):
+                raise
+            app.logger.warning(f'daily_steps id sequence out of sync, resyncing: {e.orig}')
+            if not resync_id_sequence(DailySteps):
+                raise
+            write_steps()
         flash(f'Logged {steps:,} steps for today.', 'success')
     except SQLAlchemyError as e:
         db.session.rollback()
