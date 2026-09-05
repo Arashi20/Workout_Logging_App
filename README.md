@@ -123,74 +123,14 @@ The app includes several performance optimizations for production use:
 - **Pre-ping**: Database connections are verified before use to catch connection issues early
 - **Statement Timeout**: PostgreSQL queries have a 30-second timeout to prevent hanging queries
 
-## Read-Only API & MCP Connector (for Claude)
+## Read-Only Connector for Chatbots (MCP)
 
-The app exposes a **read-only** layer so a chatbot can look at your data without
-being able to change it. Four areas are exposed: **weight**, **discipline**,
-**nutrition** and **PRs**. There is no write tool and no write endpoint - the
-whole layer only issues SELECTs.
+The `mcp/` folder is a separate, **read-only** service that exposes the weight,
+discipline, nutrition and PR data to Claude as a custom connector (and to
+scripts as a REST API). It deploys as its own Railway service pointing at that
+folder and reads the same Postgres database as this app - it cannot write to it.
 
-Two ways in, both served by the same code:
-
-| Surface | Endpoint | Auth |
-|---|---|---|
-| MCP (Claude custom connector) | `POST /mcp` | OAuth 2.1, or a static token |
-| Plain REST (scripts, curl) | `GET /api/v1/...` | Static bearer token |
-
-### Environment variables (set these in Railway)
-
-| Variable | Required | What it does |
-|---|---|---|
-| `API_READ_TOKEN` | for REST | Static bearer token(s) for the read API. Comma-separate to rotate. Generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `MCP_PUBLIC_URL` | recommended | Public https URL of the deployment, e.g. `https://your-app.up.railway.app`. Falls back to Railway's `RAILWAY_PUBLIC_DOMAIN`. |
-| `MCP_ENABLED` | no | `0` turns the `/mcp` endpoint off. Default on. |
-| `MCP_OAUTH_ENABLED` | no | `0` turns the OAuth endpoints off. Default on. |
-| `MCP_OAUTH_ALLOW_DYNAMIC_REGISTRATION` | no | `0` requires a pre-shared client instead of letting Claude register itself. Default on. |
-| `MCP_OAUTH_CLIENT_ID` / `MCP_OAUTH_CLIENT_SECRET` | no | A pre-shared OAuth client, if you would rather paste credentials into Claude than use dynamic registration. |
-| `MCP_OAUTH_REDIRECT_URIS` | no | Comma-separated callbacks allowed for that pre-shared client. Defaults to Claude's `https://claude.ai/api/mcp/auth_callback` and the `claude.com` equivalent. |
-| `API_USER` | no | Which account the API reads. Defaults to `ADMIN_USERNAME`. |
-
-Tokens are HMAC-signed with `SECRET_KEY` rather than stored in the database, so
-no migration is needed - and changing `SECRET_KEY` revokes every issued token.
-
-### Connecting Claude
-
-1. Deploy, and make sure `MCP_PUBLIC_URL` is set.
-2. In Claude: **Settings -> Connectors -> Add custom connector**.
-3. Enter the MCP server URL: `https://your-app.up.railway.app/mcp`.
-4. Leave the OAuth client ID/secret fields blank - Claude registers itself
-   automatically. (If you prefer to fill them in, set `MCP_OAUTH_CLIENT_ID` and
-   `MCP_OAUTH_CLIENT_SECRET` in Railway first and paste the same values.)
-5. Click **Connect**. A login page appears: enter your app username and
-   password, approve, and Claude gets a read-only token.
-
-For Claude Code, the static token is simpler:
-
-```bash
-claude mcp add --transport http workout-log https://your-app.up.railway.app/mcp \
-  --header "Authorization: Bearer $API_READ_TOKEN"
-```
-
-### MCP tools
-
-| Tool | Returns |
-|---|---|
-| `get_weight` | Weight / body fat / visceral fat history and the change over the window |
-| `get_discipline` | Current streak, best streak, total clean days, milestones, past attempts |
-| `get_nutrition` | Today's protein entries and total vs target, per-day totals, 30-day average, presets |
-| `get_personal_records` | Current PR per exercise grouped by type, with an estimated 1RM |
-
-### REST endpoints
-
-```bash
-curl -H "Authorization: Bearer $API_READ_TOKEN" https://your-app.up.railway.app/api/v1/ping
-curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-app.up.railway.app/api/v1/weight?limit=30"
-curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-app.up.railway.app/api/v1/discipline?limit=20"
-curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-app.up.railway.app/api/v1/nutrition?days=7"
-curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-app.up.railway.app/api/v1/prs?exercise=bench"
-```
-
-Anything other than `GET` returns `405`.
+See [`mcp/README.md`](mcp/README.md) for the setup.
 
 ## Usage
 

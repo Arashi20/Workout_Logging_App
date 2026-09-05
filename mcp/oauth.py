@@ -1,18 +1,18 @@
-"""OAuth 2.1 authorization server for the MCP connector.
+"""OAuth 2.1 authorization server for the Claude custom connector.
 
-Claude's custom connectors authenticate with OAuth, so this module implements
-the small slice of OAuth 2.1 that a remote MCP server needs:
+Claude's custom connectors authenticate with OAuth, so this implements the
+slice of OAuth 2.1 a remote MCP server needs:
 
   * RFC 8414 authorization-server metadata and RFC 9728 protected-resource
-    metadata, so Claude can discover the endpoints on its own;
+    metadata, so Claude discovers the endpoints on its own;
   * RFC 7591 dynamic client registration (Claude registers itself), plus an
-    optional pre-shared client from ``MCP_OAUTH_CLIENT_ID`` /
-    ``MCP_OAUTH_CLIENT_SECRET`` if you would rather paste the credentials in;
-  * authorization code + PKCE (S256) and refresh token grants.
+    optional pre-shared client from MCP_OAUTH_CLIENT_ID / _CLIENT_SECRET;
+  * authorization code with PKCE (S256), and refresh tokens.
 
-Tokens, codes and client credentials are all HMAC-signed values derived from
-``SECRET_KEY`` rather than database rows, so enabling the connector needs no
-schema migration. Rotating ``SECRET_KEY`` invalidates every issued token.
+Users sign in with their normal app username and password, checked against the
+shared users table. Codes, tokens and client secrets are HMAC-signed values
+derived from the signing key rather than database rows, so this service needs
+no tables of its own; rotating the key revokes everything it has issued.
 """
 
 import hashlib
@@ -35,53 +35,31 @@ from flask import (
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash
 
+import config
 from models import User
 
-mcp_oauth = Blueprint('mcp_oauth', __name__)
+oauth_bp = Blueprint('oauth', __name__)
 
-# Where Claude sends the browser back after the user approves. Kept as the
-# default allow-list so a pre-shared client works without extra configuration.
+# Where Claude sends the browser back after approval. Kept as the default
+# allow-list so a pre-shared client works without extra configuration.
 DEFAULT_REDIRECT_URIS = [
     'https://claude.ai/api/mcp/auth_callback',
     'https://claude.com/api/mcp/auth_callback',
 ]
 
-AUTH_CODE_TTL = 300           # seconds; codes are single use and short lived
-ACCESS_TOKEN_TTL = 3600       # 1 hour
+AUTH_CODE_TTL = 300                    # seconds; codes are single use
+ACCESS_TOKEN_TTL = 3600                # 1 hour
 REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30  # 30 days
 READ_SCOPE = 'read'
 
-# Authorization codes already exchanged, so a replay inside the TTL fails.
-# In-process only, which is enough for a single-worker deployment; a code that
-# survives a restart is still bounded by AUTH_CODE_TTL.
+# Codes already exchanged, so a replay inside the TTL fails. In-process only,
+# which covers a single-worker deployment; a code surviving a restart is still
+# bounded by AUTH_CODE_TTL.
 _used_codes = set()
-
-
-def oauth_enabled():
-    return os.getenv('MCP_OAUTH_ENABLED', '1').lower() in ('1', 'true', 'yes')
-
-
-def dynamic_registration_enabled():
-    return os.getenv('MCP_OAUTH_ALLOW_DYNAMIC_REGISTRATION', '1').lower() in ('1', 'true', 'yes')
 
 
 def _serializer(salt):
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt=salt)
-
-
-def public_base_url():
-    """External https base URL of this deployment, without a trailing slash.
-
-    Railway terminates TLS in front of the app, so the request itself looks
-    like plain http; prefer the configured/injected public domain.
-    """
-    configured = os.getenv('MCP_PUBLIC_URL')
-    if configured:
-        return configured.rstrip('/')
-    domain = os.getenv('RAILWAY_PUBLIC_DOMAIN')
-    if domain:
-        return f'https://{domain}'
-    return request.url_root.rstrip('/')
 
 
 # --------------------------------------------------------------------------
@@ -93,13 +71,17 @@ def static_client():
     client_id = os.getenv('MCP_OAUTH_CLIENT_ID')
     if not client_id:
         return None
-    raw_uris = os.getenv('MCP_OAUTH_REDIRECT_URIS', '')
-    uris = [u.strip() for u in raw_uris.split(',') if u.strip()] or list(DEFAULT_REDIRECT_URIS)
     return {
         'client_id': client_id,
         'client_secret': os.getenv('MCP_OAUTH_CLIENT_SECRET'),
-        'redirect_uris': uris,
+        'redirect_uris': config.csv_env('MCP_OAUTH_REDIRECT_URIS') or list(DEFAULT_REDIRECT_URIS),
     }
+
+
+def derive_client_secret(client_id):
+    key = current_app.config['SECRET_KEY'].encode()
+    digest = hmac.new(key, client_id.encode(), hashlib.sha256).digest()
+    return urlsafe_b64encode(digest).rstrip(b'=').decode()
 
 
 def register_client(redirect_uris, client_name):
@@ -111,12 +93,6 @@ def register_client(redirect_uris, client_name):
         'client_secret': derive_client_secret(client_id),
         'redirect_uris': redirect_uris,
     }
-
-
-def derive_client_secret(client_id):
-    key = current_app.config['SECRET_KEY'].encode()
-    digest = hmac.new(key, client_id.encode(), hashlib.sha256).digest()
-    return urlsafe_b64encode(digest).rstrip(b'=').decode()
 
 
 def load_client(client_id):
@@ -140,9 +116,7 @@ def client_secret_matches(client, presented):
     if not expected:
         # A public client registered without a secret: PKCE is the protection.
         return True
-    if not presented:
-        return False
-    return hmac.compare_digest(expected, presented)
+    return bool(presented) and hmac.compare_digest(expected, presented)
 
 
 def redirect_uri_allowed(client, redirect_uri):
@@ -154,17 +128,17 @@ def redirect_uri_allowed(client, redirect_uri):
 # --------------------------------------------------------------------------
 
 def issue_access_token(user_id, client_id):
-    payload = {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'access'}
-    return _serializer('mcp-oauth-access').dumps(payload)
+    return _serializer('mcp-oauth-access').dumps(
+        {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'access'})
 
 
 def issue_refresh_token(user_id, client_id):
-    payload = {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'refresh'}
-    return _serializer('mcp-oauth-refresh').dumps(payload)
+    return _serializer('mcp-oauth-refresh').dumps(
+        {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'refresh'})
 
 
 def verify_access_token(token):
-    """Return the token's claims, or None if it is invalid or expired."""
+    """Return the token's claims, or None if invalid or expired."""
     try:
         payload = _serializer('mcp-oauth-access').loads(token, max_age=ACCESS_TOKEN_TTL)
     except (BadSignature, SignatureExpired):
@@ -179,20 +153,17 @@ def verify_refresh_token(token):
         payload = _serializer('mcp-oauth-refresh').loads(token, max_age=REFRESH_TOKEN_TTL)
     except (BadSignature, SignatureExpired):
         return None
-    if payload.get('type') != 'refresh':
-        return None
-    return payload
+    return payload if payload.get('type') == 'refresh' else None
 
 
 def issue_authorization_code(user_id, client_id, redirect_uri, code_challenge):
-    payload = {
+    return _serializer('mcp-oauth-code').dumps({
         'user_id': user_id,
         'client_id': client_id,
         'redirect_uri': redirect_uri,
         'code_challenge': code_challenge,
         'nonce': secrets.token_urlsafe(8),
-    }
-    return _serializer('mcp-oauth-code').dumps(payload)
+    })
 
 
 def consume_authorization_code(code):
@@ -221,29 +192,18 @@ def pkce_matches(code_challenge, code_verifier):
 # --------------------------------------------------------------------------
 
 def _protected_resource_metadata():
-    base = public_base_url()
+    base = config.public_base_url(request)
     return jsonify({
         'resource': f'{base}/mcp',
         'authorization_servers': [base],
         'scopes_supported': [READ_SCOPE],
         'bearer_methods_supported': ['header'],
-        'resource_documentation': f'{base}/api/v1/ping',
+        'resource_documentation': f'{base}/',
     })
 
 
-@mcp_oauth.route('/.well-known/oauth-protected-resource', methods=['GET'])
-def protected_resource_metadata():
-    return _protected_resource_metadata()
-
-
-@mcp_oauth.route('/.well-known/oauth-protected-resource/mcp', methods=['GET'])
-def protected_resource_metadata_for_mcp():
-    # Clients append the resource path when probing; serve the same document.
-    return _protected_resource_metadata()
-
-
 def _authorization_server_metadata():
-    base = public_base_url()
+    base = config.public_base_url(request)
     metadata = {
         'issuer': base,
         'authorization_endpoint': f'{base}/oauth/authorize',
@@ -256,28 +216,29 @@ def _authorization_server_metadata():
             'client_secret_post', 'client_secret_basic', 'none',
         ],
     }
-    if dynamic_registration_enabled():
+    if config.dynamic_registration_enabled():
         metadata['registration_endpoint'] = f'{base}/oauth/register'
     return jsonify(metadata)
 
 
-@mcp_oauth.route('/.well-known/oauth-authorization-server', methods=['GET'])
-def authorization_server_metadata():
-    return _authorization_server_metadata()
-
-
-@mcp_oauth.route('/.well-known/oauth-authorization-server/mcp', methods=['GET'])
-def authorization_server_metadata_for_mcp():
-    return _authorization_server_metadata()
+# Clients probe both the bare path and the path with the resource appended.
+oauth_bp.add_url_rule('/.well-known/oauth-protected-resource',
+                      'protected_resource_metadata', _protected_resource_metadata)
+oauth_bp.add_url_rule('/.well-known/oauth-protected-resource/mcp',
+                      'protected_resource_metadata_mcp', _protected_resource_metadata)
+oauth_bp.add_url_rule('/.well-known/oauth-authorization-server',
+                      'authorization_server_metadata', _authorization_server_metadata)
+oauth_bp.add_url_rule('/.well-known/oauth-authorization-server/mcp',
+                      'authorization_server_metadata_mcp', _authorization_server_metadata)
 
 
 # --------------------------------------------------------------------------
 # Dynamic client registration
 # --------------------------------------------------------------------------
 
-@mcp_oauth.route('/oauth/register', methods=['POST'])
+@oauth_bp.route('/oauth/register', methods=['POST'])
 def register():
-    if not oauth_enabled() or not dynamic_registration_enabled():
+    if not config.oauth_enabled() or not config.dynamic_registration_enabled():
         return jsonify({'error': 'access_denied',
                         'error_description': 'Dynamic client registration is disabled'}), 403
 
@@ -319,13 +280,14 @@ APPROVAL_PAGE = """
          display:flex; min-height:100vh; margin:0; align-items:center; justify-content:center; }
   .card { background:#1c1c1e; padding:28px; border-radius:14px; width:min(360px, 90vw); }
   h1 { font-size:19px; margin:0 0 6px; }
-  p { color:#9b9b9f; font-size:14px; line-height:1.5; }
-  ul { color:#9b9b9f; font-size:14px; padding-left:20px; }
+  p, ul { color:#9b9b9f; font-size:14px; line-height:1.5; }
+  ul { padding-left:20px; }
+  label { font-size:13px; color:#c7c7cc; }
   input { width:100%; box-sizing:border-box; padding:11px; margin:6px 0 14px;
           border-radius:8px; border:1px solid #3a3a3c; background:#2c2c2e; color:#fff; }
   button { width:100%; padding:12px; border:0; border-radius:8px; background:#0a84ff;
            color:#fff; font-size:15px; font-weight:600; }
-  .err { color:#ff6b6b; font-size:14px; }
+  .err { color:#ff6b6b; }
 </style>
 <div class="card">
   <h1>Grant read-only access</h1>
@@ -348,18 +310,18 @@ APPROVAL_PAGE = """
 
 
 def _authorize_error(redirect_uri, state, error, description):
-    """Report back to the client when we have a validated redirect_uri."""
+    """Report back to the client once the redirect_uri is validated."""
     params = {'error': error, 'error_description': description}
     if state:
         params['state'] = state
     return redirect(f'{redirect_uri}?{urlencode(params)}')
 
 
-@mcp_oauth.route('/oauth/authorize', methods=['GET', 'POST'])
+@oauth_bp.route('/oauth/authorize', methods=['GET', 'POST'])
 def authorize():
-    if not oauth_enabled():
+    if not config.oauth_enabled():
         return jsonify({'error': 'access_denied',
-                        'error_description': 'The MCP connector is disabled'}), 403
+                        'error_description': 'This connector is disabled'}), 403
 
     source = request.form if request.method == 'POST' else request.args
     client_id = source.get('client_id', '')
@@ -377,7 +339,6 @@ def authorize():
         return jsonify({'error': 'invalid_request',
                         'error_description': 'redirect_uri is not registered for this client'}), 400
 
-    # From here the redirect_uri is trusted, so errors go back to the client.
     if response_type != 'code':
         return _authorize_error(redirect_uri, state, 'unsupported_response_type',
                                 'Only the authorization code flow is supported')
@@ -401,14 +362,14 @@ def authorize():
 
     user = User.query.filter_by(username=source.get('username', '')).first()
     if not user or not check_password_hash(user.password, source.get('password', '')):
-        response = make_response(render_template_string(
-            APPROVAL_PAGE, params=params, error='Invalid username or password',
-            client_name='Claude'))
+        page = render_template_string(APPROVAL_PAGE, params=params,
+                                      error='Invalid username or password',
+                                      client_name='Claude')
+        response = make_response(page)
         response.status_code = 401
         return response
 
-    code = issue_authorization_code(user.id, client_id, redirect_uri, code_challenge)
-    result = {'code': code}
+    result = {'code': issue_authorization_code(user.id, client_id, redirect_uri, code_challenge)}
     if state:
         result['state'] = state
     return redirect(f'{redirect_uri}?{urlencode(result)}')
@@ -418,8 +379,8 @@ def authorize():
 # Token endpoint
 # --------------------------------------------------------------------------
 
-def _client_credentials_from_request():
-    """Read client credentials from the body or from HTTP Basic auth."""
+def _client_credentials():
+    """Read client credentials from the body, or from HTTP Basic auth."""
     client_id = request.form.get('client_id')
     client_secret = request.form.get('client_secret')
     if request.authorization and request.authorization.username:
@@ -432,13 +393,13 @@ def _token_error(error, description, status=400):
     return jsonify({'error': error, 'error_description': description}), status
 
 
-@mcp_oauth.route('/oauth/token', methods=['POST'])
+@oauth_bp.route('/oauth/token', methods=['POST'])
 def token():
-    if not oauth_enabled():
-        return _token_error('invalid_client', 'The MCP connector is disabled', 403)
+    if not config.oauth_enabled():
+        return _token_error('invalid_client', 'This connector is disabled', 403)
 
     grant_type = request.form.get('grant_type')
-    client_id, client_secret = _client_credentials_from_request()
+    client_id, client_secret = _client_credentials()
     client = load_client(client_id) if client_id else None
     if client is None:
         return _token_error('invalid_client', 'Unknown client_id', 401)
@@ -468,8 +429,7 @@ def token():
         user_id = payload['user_id']
 
     else:
-        return _token_error('unsupported_grant_type',
-                            'Use authorization_code or refresh_token')
+        return _token_error('unsupported_grant_type', 'Use authorization_code or refresh_token')
 
     if User.query.get(user_id) is None:
         return _token_error('invalid_grant', 'The account for this grant no longer exists')
