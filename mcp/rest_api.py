@@ -10,16 +10,31 @@ from config import TIMEZONE_NAME, now_amsterdam
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
     DEFAULT_NUTRITION_DAYS,
+    DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
+    DEFAULT_WORKOUT_DAYS,
+    DEFAULT_WORKOUT_SESSIONS,
     clamp_int,
     collect_discipline,
     collect_nutrition,
     collect_prs,
+    collect_steps,
     collect_weight,
+    collect_workouts,
     iso,
 )
 
 rest_api = Blueprint('rest_api', __name__, url_prefix='/api/v1')
+
+
+@rest_api.route('/workouts', methods=['GET'])
+@token_required
+def workouts_endpoint(user):
+    return jsonify(collect_workouts(
+        user.id,
+        days=clamp_int(request.args.get('days'), DEFAULT_WORKOUT_DAYS, maximum=365),
+        exercise=request.args.get('exercise'),
+        limit=clamp_int(request.args.get('limit'), DEFAULT_WORKOUT_SESSIONS, maximum=100)))
 
 
 @rest_api.route('/weight', methods=['GET'])
@@ -41,6 +56,13 @@ def discipline_endpoint(user):
 def nutrition_endpoint(user):
     days = clamp_int(request.args.get('days'), DEFAULT_NUTRITION_DAYS, maximum=90)
     return jsonify(collect_nutrition(user.id, days))
+
+
+@rest_api.route('/steps', methods=['GET'])
+@token_required
+def steps_endpoint(user):
+    days = clamp_int(request.args.get('days'), DEFAULT_STEP_DAYS, maximum=365)
+    return jsonify(collect_steps(user.id, days))
 
 
 @rest_api.route('/prs', methods=['GET'])

@@ -67,11 +67,13 @@ def create_app():
         return jsonify({
             'service': 'workout-log-connector',
             'access': 'read-only',
-            'areas': ['weight', 'discipline', 'nutrition', 'prs'],
+            'areas': ['workouts', 'weight', 'discipline', 'nutrition', 'steps',
+                      'prs'],
             'mcp_endpoint': f'{base}/mcp',
             'tools': [tool['name'] for tool in TOOLS],
             'rest_endpoints': [f'{base}/api/v1/{name}' for name in
-                               ('weight', 'discipline', 'nutrition', 'prs', 'ping')],
+                               ('workouts', 'weight', 'discipline', 'nutrition',
+                                'steps', 'prs', 'ping')],
             'authorization_server': base,
         })
 

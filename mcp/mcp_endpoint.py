@@ -17,12 +17,17 @@ from auth import authenticate
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
     DEFAULT_NUTRITION_DAYS,
+    DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
+    DEFAULT_WORKOUT_DAYS,
+    DEFAULT_WORKOUT_SESSIONS,
     clamp_int,
     collect_discipline,
     collect_nutrition,
     collect_prs,
+    collect_steps,
     collect_weight,
+    collect_workouts,
 )
 
 mcp_bp = Blueprint('mcp', __name__)
@@ -42,6 +47,42 @@ INVALID_PARAMS = -32602
 READ_ONLY_HINTS = {'readOnlyHint': True, 'destructiveHint': False, 'openWorldHint': False}
 
 TOOLS = [
+    {
+        'name': 'get_workouts',
+        'title': 'Workout history',
+        'description': (
+            'Read the training log itself: the workout sessions performed in a '
+            'recent window, each with its individual sets - exercise, reps, weight, '
+            'warmup vs working, cardio calories and time - plus per-session volume '
+            'and a summary of which exercises were trained and how often. Use this '
+            'for anything about what was actually done or when ("did I train squats '
+            'this week", "how many sessions last month", "how heavy did I squat on '
+            "Tuesday\"). Filter by exercise to answer questions about one lift. "
+            'get_personal_records is only the all-time best per exercise, so it '
+            'cannot say whether something was trained recently.'
+        ),
+        'inputSchema': {
+            'type': 'object',
+            'properties': {
+                'days': {
+                    'type': 'integer',
+                    'description': f'How many days back to look, ending today (1-365, default {DEFAULT_WORKOUT_DAYS}).',
+                    'minimum': 1, 'maximum': 365,
+                },
+                'exercise': {
+                    'type': 'string',
+                    'description': 'Optional case-insensitive substring of an exercise name, e.g. "squat". Returns only sessions containing it, with the matching sets.',
+                },
+                'limit': {
+                    'type': 'integer',
+                    'description': f'Maximum sessions to return, newest first (1-100, default {DEFAULT_WORKOUT_SESSIONS}).',
+                    'minimum': 1, 'maximum': 100,
+                },
+            },
+            'additionalProperties': False,
+        },
+        'annotations': READ_ONLY_HINTS,
+    },
     {
         'name': 'get_weight',
         'title': 'Weight history',
@@ -105,12 +146,36 @@ TOOLS = [
         'annotations': READ_ONLY_HINTS,
     },
     {
+        'name': 'get_steps',
+        'title': 'Daily steps',
+        'description': (
+            "Read the daily step counts logged on the workout page: today's steps, "
+            'the 7-day and 30-day averages, and the per-day series. Averages cover '
+            'only the days that have an entry, so a day that was never logged reads '
+            'as unknown rather than as zero steps.'
+        ),
+        'inputSchema': {
+            'type': 'object',
+            'properties': {
+                'days': {
+                    'type': 'integer',
+                    'description': f'How many days back to return, ending today (1-365, default {DEFAULT_STEP_DAYS}).',
+                    'minimum': 1, 'maximum': 365,
+                },
+            },
+            'additionalProperties': False,
+        },
+        'annotations': READ_ONLY_HINTS,
+    },
+    {
         'name': 'get_personal_records',
         'title': 'Personal records',
         'description': (
             'Read the PRs page: the current personal record per exercise grouped by '
             'exercise type, with weight, reps, an estimated 1RM, cardio calories and '
-            'time, and when each was achieved.'
+            'time, and when each was achieved. These are all-time bests, not a '
+            'training history - use get_workouts to see what was actually performed '
+            'on a given day or in a recent window.'
         ),
         'inputSchema': {
             'type': 'object',
@@ -131,6 +196,13 @@ def run_tool(name, arguments, user):
     """Dispatch a tool call to its read-only collector."""
     arguments = arguments or {}
 
+    if name == 'get_workouts':
+        exercise = arguments.get('exercise')
+        return collect_workouts(
+            user.id,
+            days=clamp_int(arguments.get('days'), DEFAULT_WORKOUT_DAYS, maximum=365),
+            exercise=exercise if isinstance(exercise, str) else None,
+            limit=clamp_int(arguments.get('limit'), DEFAULT_WORKOUT_SESSIONS, maximum=100))
     if name == 'get_weight':
         return collect_weight(user.id, clamp_int(arguments.get('limit'), DEFAULT_WEIGHT_LIMIT))
     if name == 'get_discipline':
@@ -140,6 +212,8 @@ def run_tool(name, arguments, user):
     if name == 'get_nutrition':
         return collect_nutrition(
             user.id, clamp_int(arguments.get('days'), DEFAULT_NUTRITION_DAYS, maximum=90))
+    if name == 'get_steps':
+        return collect_steps(user.id, clamp_int(arguments.get('days'), DEFAULT_STEP_DAYS, maximum=365))
     if name == 'get_personal_records':
         exercise = arguments.get('exercise')
         return collect_prs(user.id, exercise if isinstance(exercise, str) else None)
@@ -172,9 +246,12 @@ def handle_message(message, user):
             'capabilities': {'tools': {'listChanged': False}},
             'serverInfo': {'name': SERVER_NAME, 'version': SERVER_VERSION},
             'instructions': (
-                'Read-only access to a personal workout log. Use get_weight, '
-                'get_discipline, get_nutrition and get_personal_records to look up '
-                'the data. Nothing here can change the log.'
+                'Read-only access to a personal workout log. get_workouts is the '
+                'training history (sessions and sets actually performed); '
+                'get_personal_records is the all-time best per exercise; '
+                'get_weight, get_discipline, get_nutrition and get_steps cover '
+                'body weight, streaks, protein and daily steps. Nothing here can '
+                'change the log.'
             ),
         })
 
