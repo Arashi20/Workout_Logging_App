@@ -138,6 +138,30 @@ saying exactly what to change.
 | `rest_api.py` | `GET /api/v1/...` |
 | `check_schema.py` | Dev check that the mirror still matches the main app's models |
 
+## Security notes
+
+The OAuth endpoints are on a public URL, so the approval page is written to be
+read carefully before anyone types a password into it:
+
+- **It names the client that actually registered, and the address the access
+  would be sent to.** Anyone can register a client, and a registered name is
+  just text the registrant chose - so the destination is shown alongside it,
+  because that is the part an attacker cannot fake. A callback outside
+  `claude.ai` / `claude.com` raises a visible warning.
+- **Failed sign-ins are throttled.** Five failures within 15 minutes lock the
+  form for 15 minutes, and a correct password is refused while locked. The
+  count is global rather than per-IP on purpose: the service sits behind a
+  proxy, so the client address it sees comes from a caller-supplied header an
+  attacker could vary at will. One account uses this connector, so a global
+  lockout costs that user one wait and costs an attacker the whole attack.
+- Set `MCP_OAUTH_ALLOW_DYNAMIC_REGISTRATION=0` once connected if you want to
+  stop accepting new client registrations altogether.
+
+A token is read-only but reads **everything** exposed here, including the
+discipline log and its relapse notes. Access tokens last an hour and refresh
+tokens 30 days; rotating `MCP_SECRET_KEY` revokes all of them at once, which is
+the kill switch if a token is ever exposed.
+
 ## Local development
 
 ```bash

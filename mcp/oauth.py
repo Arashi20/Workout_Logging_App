@@ -47,6 +47,10 @@ DEFAULT_REDIRECT_URIS = [
     'https://claude.com/api/mcp/auth_callback',
 ]
 
+# Callback hosts that belong to Claude. A client registering any other one is
+# not necessarily hostile, but the approval page says so plainly.
+KNOWN_CLIENT_HOSTS = {'claude.ai', 'claude.com'}
+
 AUTH_CODE_TTL = 300                    # seconds; codes are single use
 ACCESS_TOKEN_TTL = 3600                # 1 hour
 REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30  # 30 days
@@ -56,6 +60,40 @@ READ_SCOPE = 'read'
 # which covers a single-worker deployment; a code surviving a restart is still
 # bounded by AUTH_CODE_TTL.
 _used_codes = set()
+
+# The approval page is a public form guarding real account credentials, so
+# failed attempts are throttled. The count is global rather than per-IP: this
+# service sits behind a proxy, so the client address it sees comes from a
+# caller-supplied header that an attacker could vary at will. One account uses
+# this connector, so a global lockout costs that user one wait and costs an
+# attacker the whole attack.
+MAX_FAILED_LOGINS = 5
+FAILURE_WINDOW_SECONDS = 900   # 15 minutes
+LOCKOUT_SECONDS = 900
+_failed_logins = []
+
+
+def _prune_failures(now):
+    global _failed_logins
+    _failed_logins = [t for t in _failed_logins if now - t < FAILURE_WINDOW_SECONDS]
+
+
+def lockout_remaining():
+    """Seconds until sign-in is allowed again, or 0 when it is allowed now."""
+    now = time.time()
+    _prune_failures(now)
+    if len(_failed_logins) < MAX_FAILED_LOGINS:
+        return 0
+    remaining = int(LOCKOUT_SECONDS - (now - _failed_logins[-1]))
+    return max(remaining, 0)
+
+
+def record_login_failure():
+    _failed_logins.append(time.time())
+
+
+def clear_login_failures():
+    _failed_logins.clear()
 
 
 def _serializer(salt):
@@ -75,6 +113,7 @@ def static_client():
         'client_id': client_id,
         'client_secret': os.getenv('MCP_OAUTH_CLIENT_SECRET'),
         'redirect_uris': config.csv_env('MCP_OAUTH_REDIRECT_URIS') or list(DEFAULT_REDIRECT_URIS),
+        'client_name': os.getenv('MCP_OAUTH_CLIENT_NAME', 'Pre-configured client'),
     }
 
 
@@ -92,6 +131,7 @@ def register_client(redirect_uris, client_name):
         'client_id': client_id,
         'client_secret': derive_client_secret(client_id),
         'redirect_uris': redirect_uris,
+        'client_name': client_name,
     }
 
 
@@ -108,6 +148,7 @@ def load_client(client_id):
         'client_id': client_id,
         'client_secret': derive_client_secret(client_id),
         'redirect_uris': payload.get('redirect_uris') or [],
+        'client_name': payload.get('name') or 'Unnamed client',
     }
 
 
@@ -288,13 +329,28 @@ APPROVAL_PAGE = """
   button { width:100%; padding:12px; border:0; border-radius:8px; background:#0a84ff;
            color:#fff; font-size:15px; font-weight:600; }
   .err { color:#ff6b6b; }
+  .dest { color:#c7c7cc; }
+  .warn { background:#3a2a10; border:1px solid #7a5c1e; color:#ffd479;
+          padding:10px 12px; border-radius:8px; }
+  button[disabled] { background:#3a3a3c; color:#8e8e93; }
 </style>
 <div class="card">
   <h1>Grant read-only access</h1>
   <p><strong>{{ client_name }}</strong> is asking to read:</p>
-  <ul><li>Weight</li><li>Discipline</li><li>Nutrition</li><li>Personal records</li></ul>
+  <ul><li>Workouts</li><li>Weight</li><li>Discipline</li><li>Nutrition</li>
+      <li>Steps</li><li>Personal records</li></ul>
   <p>It cannot add, change or delete anything.</p>
+  <p class="dest">After you approve, the access is sent to <strong>{{ redirect_host }}</strong>.</p>
+  {% if unrecognized %}
+  <p class="warn">This is not one of Claude&rsquo;s usual addresses. If you did not
+  start this from Claude&rsquo;s connector settings yourself, close this page:
+  approving it would hand your data to whoever sent you here.</p>
+  {% endif %}
   {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  {% if locked_for %}
+  <p class="err">Too many failed sign-in attempts. Try again in
+  {{ (locked_for // 60) + 1 }} minute(s).</p>
+  {% endif %}
   <form method="post">
     {% for key, value in params.items() %}
     <input type="hidden" name="{{ key }}" value="{{ value }}">
@@ -302,11 +358,41 @@ APPROVAL_PAGE = """
     <label>Username</label>
     <input name="username" autocomplete="username" autofocus>
     <label>Password</label>
-    <input name="password" type="password" autocomplete="current-password">
-    <button type="submit">Approve read-only access</button>
+    <input name="password" type="password" autocomplete="current-password"
+           {% if locked_for %}disabled{% endif %}>
+    <button type="submit" {% if locked_for %}disabled{% endif %}>
+      Approve read-only access</button>
   </form>
 </div>
 """
+
+
+def _describe_client(client, redirect_uri):
+    """Identity to show on the approval page.
+
+    The name comes from whoever registered the client, so it is untrusted text -
+    Jinja escapes it, and it is shown next to the address the access would
+    actually be sent to, which is the part an attacker cannot fake.
+    """
+    name = (client.get('client_name') or 'Unnamed client').strip()[:60] or 'Unnamed client'
+    host = urlparse(redirect_uri).hostname or redirect_uri
+    return {
+        'client_name': name,
+        'redirect_host': host,
+        'unrecognized': host not in KNOWN_CLIENT_HOSTS,
+    }
+
+
+def _render_approval(client, redirect_uri, params, error=None, status=200):
+    locked_for = lockout_remaining()
+    page = render_template_string(
+        APPROVAL_PAGE, params=params, error=error, locked_for=locked_for,
+        **_describe_client(client, redirect_uri))
+    response = make_response(page)
+    response.status_code = 429 if locked_for else status
+    if locked_for:
+        response.headers['Retry-After'] = str(locked_for)
+    return response
 
 
 def _authorize_error(redirect_uri, state, error, description):
@@ -357,18 +443,20 @@ def authorize():
     }
 
     if request.method == 'GET':
-        return render_template_string(APPROVAL_PAGE, params=params, error=None,
-                                      client_name='Claude')
+        return _render_approval(client, redirect_uri, params)
+
+    # Refuse to even check the password while locked out, so the throttle
+    # cannot be worn down by continued guessing.
+    if lockout_remaining():
+        return _render_approval(client, redirect_uri, params)
 
     user = User.query.filter_by(username=source.get('username', '')).first()
     if not user or not check_password_hash(user.password, source.get('password', '')):
-        page = render_template_string(APPROVAL_PAGE, params=params,
-                                      error='Invalid username or password',
-                                      client_name='Claude')
-        response = make_response(page)
-        response.status_code = 401
-        return response
+        record_login_failure()
+        return _render_approval(client, redirect_uri, params,
+                                error='Invalid username or password', status=401)
 
+    clear_login_failures()
     result = {'code': issue_authorization_code(user.id, client_id, redirect_uri, code_challenge)}
     if state:
         result['state'] = state
