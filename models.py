@@ -27,6 +27,7 @@ class User(UserMixin, db.Model):
     protein_logs = db.relationship('ProteinLog', backref='user', lazy=True, cascade='all, delete-orphan')
     streak_logs = db.relationship('StreakLog', backref='user', lazy=True, cascade='all, delete-orphan')
     daily_steps = db.relationship('DailySteps', backref='user', lazy=True, cascade='all, delete-orphan')
+    journal_entries = db.relationship('JournalEntry', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class Exercise(db.Model):
     __tablename__ = 'exercises'
@@ -197,3 +198,20 @@ class DailySteps(db.Model):
     steps = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=now_amsterdam)
     updated_at = db.Column(db.DateTime, default=now_amsterdam, onupdate=now_amsterdam)
+
+
+class JournalEntry(db.Model):
+    """A free-text journal entry. Append-only: entries are written once and then
+    only read or deleted, so there is no updated_at - what you wrote is what stays."""
+    __tablename__ = 'journal_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=True)
+    content = db.Column(db.Text, nullable=False)
+    mood = db.Column(db.Integer, nullable=True)  # 1-10, optional
+    # Separate from created_at so an entry can be back-dated to the day it is about.
+    entry_date = db.Column(db.DateTime, nullable=False, default=now_amsterdam, index=True)
+    created_at = db.Column(db.DateTime, default=now_amsterdam)
+
+    __table_args__ = (db.Index('ix_journal_entries_user_date', 'user_id', 'entry_date'),)

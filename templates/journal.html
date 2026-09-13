@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Journal - Workout Logger{% endblock %}
+
+{% block content %}
+<div class="journal-container">
+    <div class="journal-header">
+        <h1>Journal</h1>
+        <a href="{{ url_for('export_journal') }}" class="journal-export">Export CSV</a>
+    </div>
+
+    <div class="journal-layout">
+        <!-- COMPOSE -->
+        <div class="journal-compose">
+            <div class="add-weight-card journal-card">
+                <h2>New Entry</h2>
+                <form method="POST" action="{{ url_for('journal_add') }}" id="journal-form">
+                    <div class="form-group">
+                        <label for="title">Title (optional)</label>
+                        <input type="text" id="title" name="title" maxlength="200"
+                               placeholder="What's this one about?">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">Entry</label>
+                        <textarea id="content" name="content" class="journal-textarea"
+                                  rows="16" required
+                                  placeholder="Write whatever's on your mind..."></textarea>
+                        <span class="journal-charcount" id="charcount">0 characters</span>
+                    </div>
+
+                    <div class="form-row journal-meta-row">
+                        <div class="form-group">
+                            <label for="entry_date">Date</label>
+                            <input type="date" id="entry_date" name="entry_date"
+                                   value="{{ now.strftime('%Y-%m-%d') }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mood">Mood / Rating (optional)</label>
+                            <select id="mood" name="mood">
+                                <option value="">— not set —</option>
+                                {% for n in range(10, 0, -1) %}
+                                <option value="{{ n }}">{{ n }} / 10</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                    <p class="journal-note">Entries are append-only — once saved they can be
+                        read or deleted, but not edited.</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- ENTRIES -->
+        <div class="journal-entries">
+            <div class="journal-stats-grid">
+                <div class="journal-stat-card">
+                    <span class="journal-stat-value">{{ total_entries }}</span>
+                    <span class="journal-stat-label">Entries</span>
+                </div>
+                <div class="journal-stat-card">
+                    <span class="journal-stat-value">{{ days_written }}</span>
+                    <span class="journal-stat-label">Days Written</span>
+                </div>
+                <div class="journal-stat-card">
+                    <span class="journal-stat-value">{{ avg_mood if avg_mood is not none else '—' }}</span>
+                    <span class="journal-stat-label">Avg Mood</span>
+                </div>
+                <div class="journal-stat-card">
+                    <span class="journal-stat-value">{{ days_since_last if days_since_last is not none else '—' }}</span>
+                    <span class="journal-stat-label">Days Since Last</span>
+                </div>
+            </div>
+
+            <form method="GET" action="{{ url_for('journal') }}" class="journal-search">
+                <input type="search" name="q" value="{{ q }}" placeholder="Search entries...">
+                <button type="submit" class="btn btn-secondary">Search</button>
+                {% if q %}
+                <a href="{{ url_for('journal') }}" class="journal-clear">Clear</a>
+                {% endif %}
+            </form>
+
+            <div id="entry-list">
+                {% for entry in entries %}
+                <article class="journal-entry-card" data-entry-id="{{ entry.id }}">
+                    <header class="journal-entry-head">
+                        <div>
+                            {% if entry.title %}
+                            <h3 class="journal-entry-title">{{ entry.title }}</h3>
+                            {% endif %}
+                            <span class="journal-entry-date">{{ entry.entry_date.strftime('%d %b %Y') }}
+                                <span class="journal-entry-time">{{ entry.entry_date.strftime('%H:%M') }}</span>
+                            </span>
+                        </div>
+                        <div class="journal-entry-actions">
+                            {% if entry.mood %}
+                            <span class="journal-mood journal-mood-{{ entry.mood }}">{{ entry.mood }}/10</span>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('journal_delete', entry_id=entry.id) }}"
+                                  onsubmit="return confirm('Delete this entry? This cannot be undone.');">
+                                <button type="submit" class="journal-delete" aria-label="Delete entry">×</button>
+                            </form>
+                        </div>
+                    </header>
+                    <div class="journal-entry-body">{{ entry.content }}</div>
+                </article>
+                {% else %}
+                <div class="empty-state">
+                    <p>{% if q %}No entries match "{{ q }}".{% else %}No entries yet. Write your first one.{% endif %}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if has_more %}
+            <div class="journal-more-wrap">
+                <button id="load-more" class="btn btn-secondary"
+                        data-offset="{{ page_size }}">Load more</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Live character count - long-form writing on a laptop, nice to see length.
+    const textarea = document.getElementById('content');
+    const counter = document.getElementById('charcount');
+    if (textarea && counter) {
+        const update = () => {
+            const n = textarea.value.length;
+            counter.textContent = n + (n === 1 ? ' character' : ' characters');
+        };
+        textarea.addEventListener('input', update);
+        update();
+
+        // Ctrl/Cmd+Enter submits, so a long entry never needs the mouse.
+        textarea.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                document.getElementById('journal-form').requestSubmit();
+            }
+        });
+    }
+
+    // Paginated "Load more", mirroring the Discipline page's history loader.
+    const button = document.getElementById('load-more');
+    if (!button) return;
+
+    const list = document.getElementById('entry-list');
+    const query = new URLSearchParams(window.location.search).get('q') || '';
+
+    button.addEventListener('click', () => {
+        button.disabled = true;
+        button.textContent = 'Loading...';
+
+        const url = `{{ url_for('journal_entries') }}?offset=${button.dataset.offset}`
+            + (query ? `&q=${encodeURIComponent(query)}` : '');
+
+        fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+                data.entries.forEach((entry) => list.appendChild(buildCard(entry)));
+                button.dataset.offset = data.next_offset;
+                if (data.has_more) {
+                    button.disabled = false;
+                    button.textContent = 'Load more';
+                } else {
+                    button.remove();
+                }
+            })
+            .catch(() => {
+                button.disabled = false;
+                button.textContent = 'Load more';
+            });
+    });
+
+    function buildCard(entry) {
+        const card = document.createElement('article');
+        card.className = 'journal-entry-card';
+        card.dataset.entryId = entry.id;
+
+        const head = document.createElement('header');
+        head.className = 'journal-entry-head';
+
+        const left = document.createElement('div');
+        if (entry.title) {
+            const title = document.createElement('h3');
+            title.className = 'journal-entry-title';
+            title.textContent = entry.title;
+            left.appendChild(title);
+        }
+        const date = document.createElement('span');
+        date.className = 'journal-entry-date';
+        date.textContent = entry.date + ' ';
+        const time = document.createElement('span');
+        time.className = 'journal-entry-time';
+        time.textContent = entry.time;
+        date.appendChild(time);
+        left.appendChild(date);
+
+        const right = document.createElement('div');
+        right.className = 'journal-entry-actions';
+        if (entry.mood) {
+            const mood = document.createElement('span');
+            mood.className = `journal-mood journal-mood-${entry.mood}`;
+            mood.textContent = `${entry.mood}/10`;
+            right.appendChild(mood);
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = entry.delete_url;
+        form.addEventListener('submit', (e) => {
+            if (!confirm('Delete this entry? This cannot be undone.')) e.preventDefault();
+        });
+        const del = document.createElement('button');
+        del.type = 'submit';
+        del.className = 'journal-delete';
+        del.setAttribute('aria-label', 'Delete entry');
+        del.textContent = '×';
+        form.appendChild(del);
+        right.appendChild(form);
+
+        head.appendChild(left);
+        head.appendChild(right);
+
+        const body = document.createElement('div');
+        body.className = 'journal-entry-body';
+        // textContent, not innerHTML - entry text is never treated as markup.
+        body.textContent = entry.content;
+
+        card.appendChild(head);
+        card.appendChild(body);
+        return card;
+    }
+})();
+</script>
+{% endblock %}
