@@ -99,10 +99,10 @@
                             {% if entry.mood %}
                             <span class="journal-mood journal-mood-{{ entry.mood }}">{{ entry.mood }}/10</span>
                             {% endif %}
-                            <form method="POST" action="{{ url_for('journal_delete', entry_id=entry.id) }}"
-                                  onsubmit="return confirm('Delete this entry? This cannot be undone.');">
-                                <button type="submit" class="journal-delete" aria-label="Delete entry">×</button>
-                            </form>
+                            <button type="button" class="journal-delete"
+                                    aria-label="Delete entry"
+                                    data-delete-url="{{ url_for('journal_delete', entry_id=entry.id) }}"
+                                    data-entry-label="{{ entry.title if entry.title else entry.entry_date.strftime('%d %b %Y at %H:%M') }}">×</button>
                         </div>
                     </header>
                     <div class="journal-entry-body">{{ entry.content }}</div>
@@ -124,6 +124,25 @@
             <div class="journal-export-footer">
                 <a href="{{ url_for('export_journal') }}" class="btn btn-secondary">Export CSV</a>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Entry Modal -->
+<div class="modal-overlay" id="delete-entry-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Delete Entry?</h2>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <strong id="delete-entry-label"></strong>?
+               Entries are append-only, so this cannot be undone.</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="delete-entry-cancel">Cancel</button>
+            <form method="POST" action="" id="delete-entry-form" style="display: inline;">
+                <button type="submit" class="btn btn-danger">Yes, Delete Entry</button>
+            </form>
         </div>
     </div>
 </div>
@@ -151,11 +170,39 @@
         });
     }
 
+    // Delete confirmation, using the app's own modal rather than the browser's
+    // confirm(). Delegated from the list so entries added by "Load more" are
+    // covered without rewiring.
+    const list = document.getElementById('entry-list');
+    const modal = document.getElementById('delete-entry-modal');
+    const modalForm = document.getElementById('delete-entry-form');
+    const modalLabel = document.getElementById('delete-entry-label');
+    const modalCancel = document.getElementById('delete-entry-cancel');
+
+    if (list && modal && modalForm && modalLabel && modalCancel) {
+        const closeModal = () => modal.classList.remove('active');
+
+        list.addEventListener('click', (e) => {
+            const button = e.target.closest('.journal-delete');
+            if (!button) return;
+            modalLabel.textContent = button.dataset.entryLabel || 'this entry';
+            modalForm.action = button.dataset.deleteUrl;
+            modal.classList.add('active');
+        });
+
+        modalCancel.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+        });
+    }
+
     // Paginated "Load more", mirroring the Discipline page's history loader.
     const button = document.getElementById('load-more');
     if (!button) return;
 
-    const list = document.getElementById('entry-list');
     const query = new URLSearchParams(window.location.search).get('q') || '';
 
     button.addEventListener('click', () => {
@@ -215,19 +262,14 @@
             mood.textContent = `${entry.mood}/10`;
             right.appendChild(mood);
         }
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = entry.delete_url;
-        form.addEventListener('submit', (e) => {
-            if (!confirm('Delete this entry? This cannot be undone.')) e.preventDefault();
-        });
         const del = document.createElement('button');
-        del.type = 'submit';
+        del.type = 'button';
         del.className = 'journal-delete';
         del.setAttribute('aria-label', 'Delete entry');
+        del.dataset.deleteUrl = entry.delete_url;
+        del.dataset.entryLabel = entry.title || `${entry.date} at ${entry.time}`;
         del.textContent = '×';
-        form.appendChild(del);
-        right.appendChild(form);
+        right.appendChild(del);
 
         head.appendChild(left);
         head.appendChild(right);
