@@ -11,6 +11,7 @@ This is a lightweight, mobile-optimized web application built with Flask that he
 - **Workout Logging**: Track exercises, sets, reps, and weights in real-time
 - **Personal Records (PRs)**: View all your personal records for each exercise
 - **Weight Tracker**: Monitor body weight, body fat percentage, and visceral fat with visual graphs
+- **Journal**: Free-text journal entries with an optional 1-10 mood rating, searchable and exportable (append-only - entries are written once, then read or deleted)
 - **Secure Login**: Password-protected access to your personal data
 - **Mobile-Optimized**: Responsive design that works great on mobile and desktop
 
@@ -95,6 +96,10 @@ The database is automatically initialized on first startup. When the app starts,
 
 If you make changes to the database models and need to update the schema in production:
 
+Note: *new tables* need no migration at all. `init_app()` runs `db.create_all()` on
+every startup, so a newly added model's table is created automatically on the next
+deploy. Only *new columns on existing tables* need the step below.
+
 **Option 1 - Automatic Migration (RECOMMENDED)**:
 Run this command in the Railway console to add new columns while preserving your data:
 ```bash
@@ -141,6 +146,7 @@ See [`mcp/README.md`](mcp/README.md) for the setup.
 5. View your personal records in the PRs tab
 6. Create workout programs in the Programs tab
 7. Track your weight and body composition in the Weight Tracker tab
+8. Write journal entries in the Journal tab (best on a laptop; Ctrl/Cmd+Enter saves)
 
 ## Tech Stack
 

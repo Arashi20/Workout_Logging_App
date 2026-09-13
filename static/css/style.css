@@ -2386,3 +2386,303 @@ tr:hover {
         padding: 1.5rem;
     }
 }
+
+/* ============================================
+   Journal
+   Desktop-first: this is the one page mainly used on a laptop, so it gets a
+   two-column layout (compose left, entries right) that collapses to a single
+   column on phones like the rest of the app.
+   ============================================ */
+
+/* Tie native widgets (the date picker's icon) to the app's own theme toggle
+   rather than the OS setting. Scoped to this page so other pages are untouched. */
+.journal-container {
+    color-scheme: light;
+}
+
+[data-theme="dark"] .journal-container {
+    color-scheme: dark;
+}
+
+.journal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.journal-export {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.journal-export:hover {
+    color: var(--primary-color);
+}
+
+.journal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Keep the editor in view while scrolling a long list of entries. */
+.journal-compose {
+    position: sticky;
+    top: 6rem;
+}
+
+.journal-card {
+    margin-bottom: 0;
+}
+
+/* The app's shared form styles set no background, so inputs fall back to the
+   browser default (white) in dark mode. Themed here so the whole journal form
+   reads as one surface. */
+.journal-card input,
+.journal-card select,
+.journal-card textarea,
+.journal-search input[type="search"] {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+.journal-textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 200px;
+}
+
+.journal-charcount {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.journal-meta-row {
+    margin-bottom: 1rem;
+}
+
+.journal-note {
+    margin-top: 0.85rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Stats */
+.journal-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.journal-stat-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 0.5rem;
+    text-align: center;
+}
+
+.journal-stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.journal-stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Search */
+.journal-search {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.journal-search input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.journal-search input[type="search"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.journal-clear {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* Entry cards */
+.journal-entry-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.3s;
+}
+
+.journal-entry-card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.journal-entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.journal-entry-title {
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.journal-entry-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.journal-entry-time {
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.journal-entry-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* Preserve the line breaks the entry was written with. */
+.journal-entry-body {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    line-height: 1.75;
+    color: var(--text-primary);
+    max-width: 70ch;
+}
+
+.journal-delete {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 0 0.3rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.journal-delete:hover {
+    opacity: 1;
+    color: var(--danger-color);
+}
+
+/* Mood badge: red at the low end, gold in the middle, green at the top. */
+.journal-mood {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: #ffffff;
+    background-color: var(--secondary-color);
+}
+
+.journal-mood-1,
+.journal-mood-2,
+.journal-mood-3 {
+    background-color: var(--danger-color);
+}
+
+.journal-mood-4,
+.journal-mood-5,
+.journal-mood-6 {
+    background-color: var(--warning-color);
+    color: #1a1a1a;
+}
+
+.journal-mood-7,
+.journal-mood-8,
+.journal-mood-9,
+.journal-mood-10 {
+    background-color: var(--success-color);
+}
+
+.journal-more-wrap {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+/* Tablet: stack the two columns, compose first. */
+@media (max-width: 1024px) {
+    .journal-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .journal-compose {
+        position: static;
+    }
+
+    .journal-textarea {
+        min-height: 160px;
+    }
+}
+
+@media (max-width: 768px) {
+    .journal-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .journal-entry-card {
+        padding: 1.15rem;
+    }
+
+    .journal-search {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .journal-entry-head {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .journal-entry-actions {
+        align-self: flex-start;
+    }
+}

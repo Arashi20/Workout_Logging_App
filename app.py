@@ -10,7 +10,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog, DailySteps
+from models import db, User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord, WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog, DailySteps, JournalEntry
 from sqlalchemy import event, text, inspect, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Engine
@@ -134,7 +134,7 @@ def init_app():
         # primary key (see resync_id_sequence).
         for model in (User, Exercise, WorkoutSession, WorkoutLog, PersonalRecord,
                       WeightLog, BloodworkLog, FoodPreset, ProteinLog, StreakLog,
-                      DailySteps):
+                      DailySteps, JournalEntry):
             resync_id_sequence(model)
         
         # Create admin user if it doesn't exist
@@ -2368,6 +2368,146 @@ def discipline_delete(streak_id):
     return redirect(url_for('discipline'))
 
 
+JOURNAL_PAGE_SIZE = 10
+
+
+def _journal_query(q=None):
+    """Base query for the current user's entries, newest first, optionally searched."""
+    query = JournalEntry.query.filter(JournalEntry.user_id == current_user.id)
+    if q:
+        pattern = f'%{q}%'
+        query = query.filter(db.or_(JournalEntry.content.ilike(pattern),
+                                    JournalEntry.title.ilike(pattern)))
+    return query.order_by(JournalEntry.entry_date.desc(), JournalEntry.id.desc())
+
+
+def _journal_payload(entry):
+    return {
+        'id': entry.id,
+        'title': entry.title or '',
+        'content': entry.content,
+        'mood': entry.mood,
+        'date': entry.entry_date.strftime('%d %b %Y'),
+        'time': entry.entry_date.strftime('%H:%M'),
+        'delete_url': url_for('journal_delete', entry_id=entry.id),
+    }
+
+
+@app.route('/journal')
+@login_required
+def journal():
+    """Free-text journal. Entries are append-only - write once, read or delete after."""
+    q = request.args.get('q', '').strip()
+
+    rows = _journal_query(q).limit(JOURNAL_PAGE_SIZE + 1).all()
+    has_more = len(rows) > JOURNAL_PAGE_SIZE
+    entries = rows[:JOURNAL_PAGE_SIZE]
+
+    total_entries = _journal_query().count()
+    moods = [e.mood for e in _journal_query().filter(JournalEntry.mood.isnot(None)).all()]
+    avg_mood = round(sum(moods) / len(moods), 1) if moods else None
+
+    # Distinct days written on, so sporadic journalling still shows something useful.
+    days_written = db.session.query(
+        db.func.count(db.distinct(db.func.date(JournalEntry.entry_date)))
+    ).filter(JournalEntry.user_id == current_user.id).scalar() or 0
+
+    last_entry = _journal_query().first()
+    days_since_last = (now_amsterdam() - last_entry.entry_date).days if last_entry else None
+
+    return render_template('journal.html',
+        entries=entries,
+        has_more=has_more,
+        page_size=JOURNAL_PAGE_SIZE,
+        q=q,
+        total_entries=total_entries,
+        avg_mood=avg_mood,
+        days_written=days_written,
+        days_since_last=days_since_last,
+        now=now_amsterdam(),
+    )
+
+
+@app.route('/journal/entries')
+@login_required
+def journal_entries():
+    """Return a page of entries for the 'Load more' button."""
+    try:
+        offset = max(0, int(request.args.get('offset', 0)))
+    except (TypeError, ValueError):
+        offset = 0
+    q = request.args.get('q', '').strip()
+
+    rows = _journal_query(q).offset(offset).limit(JOURNAL_PAGE_SIZE + 1).all()
+    has_more = len(rows) > JOURNAL_PAGE_SIZE
+    rows = rows[:JOURNAL_PAGE_SIZE]
+
+    return jsonify({
+        'entries': [_journal_payload(e) for e in rows],
+        'has_more': has_more,
+        'next_offset': offset + len(rows),
+    })
+
+
+@app.route('/journal/add', methods=['POST'])
+@login_required
+def journal_add():
+    """Save a new entry. Multiple entries per day are fine."""
+    content = request.form.get('content', '').strip()
+    if not content:
+        flash('Nothing to save - the entry was empty.', 'error')
+        return redirect(url_for('journal'))
+
+    title = request.form.get('title', '').strip() or None
+
+    mood = None
+    raw_mood = request.form.get('mood', '').strip()
+    if raw_mood:
+        try:
+            mood = int(raw_mood)
+        except ValueError:
+            mood = None
+        else:
+            if not 1 <= mood <= 10:
+                mood = None
+
+    # Back-date to a chosen day, keeping the current clock time so several
+    # entries on the same day still sort in the order they were written.
+    entry_date = now_amsterdam()
+    raw_date = request.form.get('entry_date', '').strip()
+    if raw_date:
+        try:
+            chosen = datetime.strptime(raw_date, '%Y-%m-%d')
+        except ValueError:
+            pass
+        else:
+            entry_date = chosen.replace(hour=entry_date.hour, minute=entry_date.minute,
+                                        second=entry_date.second)
+
+    db.session.add(JournalEntry(
+        user_id=current_user.id,
+        title=title,
+        content=content,
+        mood=mood,
+        entry_date=entry_date,
+    ))
+    db.session.commit()
+    flash('Entry saved.', 'success')
+    return redirect(url_for('journal'))
+
+
+@app.route('/journal/delete/<int:entry_id>', methods=['POST'])
+@login_required
+def journal_delete(entry_id):
+    """Delete an entry. Append-only means no editing, but a mistake can be removed."""
+    entry = JournalEntry.query.filter_by(id=entry_id, user_id=current_user.id).first()
+    if entry:
+        db.session.delete(entry)
+        db.session.commit()
+        flash('Entry deleted.', 'success')
+    return redirect(url_for('journal'))
+
+
 @app.route('/export/workout-logs')
 @login_required
 def export_workout_logs():
@@ -2554,6 +2694,36 @@ def export_bloodwork_logs():
         headers={'Content-Disposition': f'attachment; filename=bloodwork_logs_{now_amsterdam().strftime("%Y%m%d")}.csv'}
     )
 
+
+@app.route('/export/journal')
+@login_required
+def export_journal():
+    """Export journal entries as CSV"""
+    entries = (JournalEntry.query
+               .filter_by(user_id=current_user.id)
+               .order_by(JournalEntry.entry_date)
+               .all())
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['date', 'title', 'mood', 'content'])
+
+    for entry in entries:
+        writer.writerow([
+            entry.entry_date.strftime('%Y-%m-%d %H:%M:%S'),
+            entry.title or '',
+            entry.mood if entry.mood is not None else '',
+            entry.content,
+        ])
+
+    output = si.getvalue()
+    si.close()
+
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=journal_{now_amsterdam().strftime("%Y%m%d")}.csv'}
+    )
 
 @app.route('/export/protein-logs')
 @login_required
