@@ -2,8 +2,8 @@
 
 This service deploys on its own (Railway root directory ``mcp/``) and therefore
 cannot import the main app's ``models.py``. What lives here is a deliberately
-narrow view: the same table and column names, but only the columns the four
-exposed areas need, and no ``db.create_all()`` anywhere - this service never
+narrow view: the same table and column names, but only the columns the exposed
+areas need, and no ``db.create_all()`` anywhere - this service never
 creates or migrates a schema, it only reads one the main app owns.
 
 If a column or table is ever renamed in the main app's models.py, mirror the
@@ -124,3 +124,14 @@ class StreakLog(db.Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime)
     relapse_note = db.Column(db.Text)
+
+
+class JournalEntry(db.Model):
+    """Append-only free-text journal entries with an optional 1-10 mood."""
+    __tablename__ = 'journal_entries'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text, nullable=False)
+    mood = db.Column(db.Integer)
+    entry_date = db.Column(db.DateTime, nullable=False, index=True)

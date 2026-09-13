@@ -9,6 +9,7 @@ from auth import token_required
 from config import TIMEZONE_NAME, now_amsterdam
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
+    DEFAULT_JOURNAL_LIMIT,
     DEFAULT_NUTRITION_DAYS,
     DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
@@ -16,6 +17,7 @@ from data import (
     DEFAULT_WORKOUT_SESSIONS,
     clamp_int,
     collect_discipline,
+    collect_journal,
     collect_nutrition,
     collect_prs,
     collect_steps,
@@ -63,6 +65,19 @@ def nutrition_endpoint(user):
 def steps_endpoint(user):
     days = clamp_int(request.args.get('days'), DEFAULT_STEP_DAYS, maximum=365)
     return jsonify(collect_steps(user.id, days))
+
+
+@rest_api.route('/journal', methods=['GET'])
+@token_required
+def journal_endpoint(user):
+    """Journal metadata and mood. Pass full_text=true to include the entry text."""
+    days = request.args.get('days')
+    return jsonify(collect_journal(
+        user.id,
+        limit=clamp_int(request.args.get('limit'), DEFAULT_JOURNAL_LIMIT, maximum=200),
+        days=clamp_int(days, None, maximum=3650) if days is not None else None,
+        search=request.args.get('search'),
+        full_text=request.args.get('full_text', '').lower() in ('1', 'true', 'yes')))
 
 
 @rest_api.route('/prs', methods=['GET'])

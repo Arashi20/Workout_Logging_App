@@ -16,6 +16,7 @@ import config
 from auth import authenticate
 from data import (
     DEFAULT_DISCIPLINE_HISTORY,
+    DEFAULT_JOURNAL_LIMIT,
     DEFAULT_NUTRITION_DAYS,
     DEFAULT_STEP_DAYS,
     DEFAULT_WEIGHT_LIMIT,
@@ -23,6 +24,7 @@ from data import (
     DEFAULT_WORKOUT_SESSIONS,
     clamp_int,
     collect_discipline,
+    collect_journal,
     collect_nutrition,
     collect_prs,
     collect_steps,
@@ -189,6 +191,46 @@ TOOLS = [
         },
         'annotations': READ_ONLY_HINTS,
     },
+    {
+        'name': 'get_journal',
+        'title': 'Journal entries',
+        'description': (
+            'Read the journal page: when entries were written, their titles, the '
+            'optional 1-10 mood rating on each, and per-day average mood, plus how '
+            'long each entry is. Use it to line mood up against training, steps or '
+            'sleep ("was my mood lower in weeks I trained less"), or to find when '
+            'something was written about. '
+            'The entry text itself is NOT returned unless full_text is set to true - '
+            'these are personal diary entries, so ask for the text only when the '
+            'question actually needs what was written rather than when or how it '
+            'was rated.'
+        ),
+        'inputSchema': {
+            'type': 'object',
+            'properties': {
+                'limit': {
+                    'type': 'integer',
+                    'description': f'How many entries to return, newest first (1-200, default {DEFAULT_JOURNAL_LIMIT}).',
+                    'minimum': 1, 'maximum': 200,
+                },
+                'days': {
+                    'type': 'integer',
+                    'description': 'Optional window: only entries written in the last N days (1-3650). Omit for all time.',
+                    'minimum': 1, 'maximum': 3650,
+                },
+                'search': {
+                    'type': 'string',
+                    'description': 'Optional case-insensitive substring matched against entry titles and text, e.g. "shoulder".',
+                },
+                'full_text': {
+                    'type': 'boolean',
+                    'description': 'Set true to include the full text of each entry. Defaults to false, which returns only dates, titles, mood and length.',
+                },
+            },
+            'additionalProperties': False,
+        },
+        'annotations': READ_ONLY_HINTS,
+    },
 ]
 
 
@@ -217,6 +259,16 @@ def run_tool(name, arguments, user):
     if name == 'get_personal_records':
         exercise = arguments.get('exercise')
         return collect_prs(user.id, exercise if isinstance(exercise, str) else None)
+
+    if name == 'get_journal':
+        search = arguments.get('search')
+        days = arguments.get('days')
+        return collect_journal(
+            user.id,
+            limit=clamp_int(arguments.get('limit'), DEFAULT_JOURNAL_LIMIT, maximum=200),
+            days=clamp_int(days, None, maximum=3650) if days is not None else None,
+            search=search if isinstance(search, str) else None,
+            full_text=arguments.get('full_text') is True)
 
     raise KeyError(name)
 

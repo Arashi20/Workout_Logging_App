@@ -1,11 +1,11 @@
 """Standalone read-only connector for the Workout Logging App.
 
 Deployed as its own Railway service pointing at this folder, sharing the main
-app's Postgres database. It exposes four areas - weight, discipline, nutrition
-and PRs - over MCP (for Claude custom connectors) and over plain REST, and it
-never writes: no route accepts anything but GET or the MCP/OAuth POSTs, no
-collector issues anything but SELECT, and the schema is owned entirely by the
-main app.
+app's Postgres database. It exposes workouts, weight, discipline, nutrition,
+steps, journal and PRs over MCP (for Claude custom connectors) and over plain
+REST, and it never writes: no route accepts anything but GET or the MCP/OAuth
+POSTs, no collector issues anything but SELECT, and the schema is owned entirely
+by the main app.
 """
 
 import os
