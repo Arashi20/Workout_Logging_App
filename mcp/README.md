@@ -1,7 +1,8 @@
 # Workout Log Connector (MCP)
 
 A **standalone, read-only** service that exposes the workout app -
-**workouts**, **weight**, **discipline**, **nutrition**, **steps** and **PRs** -
+**workouts**, **weight**, **discipline**, **nutrition**, **steps**, **journal**
+and **PRs** -
 to Claude as a custom connector, and to scripts as a plain REST API.
 
 It deploys as its own Railway service pointing at this folder, next to the main
@@ -83,11 +84,28 @@ claude mcp add --transport http workout-log https://your-connector.up.railway.ap
 | `get_nutrition` | Today's protein entries vs target, per-day totals, 30-day average, presets |
 | `get_steps` | Daily step counts with the 7- and 30-day averages, over the days that have an entry |
 | `get_personal_records` | All-time best per exercise grouped by type, with an estimated 1RM |
+| `get_journal` | Journal entry dates, titles, 1-10 mood ratings, per-day average mood and entry lengths. **The entry text is withheld unless `full_text: true` is passed** - see below |
 
 `get_workouts` and `get_personal_records` answer different questions: the first
 is what was actually performed and when, the second is only each exercise's best
 ever. A question about recent training needs `get_workouts` - a PR alone cannot
 say whether a lift was trained this week.
+
+## The journal is metadata-first
+
+Journal entries are personal prose, unlike every other area here, which is
+numbers. So `get_journal` returns **dates, titles, mood ratings, per-day average
+mood and entry lengths by default, and not the text**. That is enough to line
+mood up against training, steps or sleep without handing the diary over.
+
+The text is one explicit flag away when a question genuinely needs it:
+`full_text: true` on the tool, `?full_text=true` on the REST endpoint. It must
+be a real boolean on the MCP tool - a truthy string will not open it. Nothing
+else in the response changes.
+
+If you would rather the text never be reachable at all, delete the `full_text`
+branch in `collect_journal` (`data.py`) and the property from the tool schema;
+the metadata keeps working unchanged.
 
 ## REST
 
@@ -99,6 +117,8 @@ curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railw
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/nutrition?days=7"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/steps?days=30"
 curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/prs?exercise=bench"
+curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/journal?days=30"
+curl -H "Authorization: Bearer $API_READ_TOKEN" "https://your-connector.up.railway.app/api/v1/journal?search=shoulder&full_text=true"
 ```
 
 Unauthenticated helpers: `GET /` describes the service, and `GET /healthz`

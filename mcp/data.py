@@ -16,6 +16,7 @@ from models import (
     EXERCISE_TYPES,
     DailySteps,
     FoodPreset,
+    JournalEntry,
     PersonalRecord,
     ProteinLog,
     StreakLog,
@@ -33,6 +34,7 @@ DEFAULT_STEP_DAYS = 30
 DEFAULT_WORKOUT_SESSIONS = 20
 DEFAULT_NUTRITION_DAYS = 7
 DEFAULT_DISCIPLINE_HISTORY = 20
+DEFAULT_JOURNAL_LIMIT = 20
 MAX_LIMIT = 500
 
 MILESTONES = [
@@ -394,6 +396,86 @@ def collect_steps(user_id, days=DEFAULT_STEP_DAYS):
             'best_day': {'date': best.date.isoformat(), 'steps': best.steps} if best else None,
         },
         'daily': logged,
+    }
+
+
+def collect_journal(user_id, limit=DEFAULT_JOURNAL_LIMIT, days=None, search=None,
+                    full_text=False):
+    """Journal entries, newest first, with mood statistics.
+
+    The entry text is withheld unless ``full_text`` is asked for: the default
+    answers "when did I write, and how did I rate the day" from metadata alone,
+    so correlating mood against training does not require handing over the prose.
+    """
+    query = JournalEntry.query.filter(JournalEntry.user_id == user_id)
+
+    window = None
+    if days:
+        start = start_of_today() - timedelta(days=days - 1)
+        query = query.filter(JournalEntry.entry_date >= start)
+        window = {'days': days, 'from': start.date().isoformat(),
+                  'to': now_amsterdam().date().isoformat()}
+
+    if search:
+        pattern = f'%{search}%'
+        query = query.filter(db.or_(JournalEntry.content.ilike(pattern),
+                                    JournalEntry.title.ilike(pattern)))
+
+    matched = query.count()
+    rows = query.order_by(JournalEntry.entry_date.desc(),
+                          JournalEntry.id.desc()).limit(limit).all()
+
+    def payload(entry):
+        item = {
+            'id': entry.id,
+            'written_at': iso(entry.entry_date),
+            'date': entry.entry_date.date().isoformat(),
+            'title': entry.title,
+            'mood': entry.mood,
+            'characters': len(entry.content or ''),
+            'words': len((entry.content or '').split()),
+        }
+        if full_text:
+            item['content'] = entry.content
+        return item
+
+    # Statistics cover every entry, not just the page returned.
+    stat_rows = (JournalEntry.query
+                 .with_entities(JournalEntry.entry_date, JournalEntry.mood)
+                 .filter(JournalEntry.user_id == user_id)
+                 .all())
+    moods = [m for _, m in stat_rows if m is not None]
+    days_written = len({d.date() for d, _ in stat_rows})
+    latest = max((d for d, _ in stat_rows), default=None)
+
+    # Mood per calendar day, so it can be lined up against training or steps.
+    by_day = defaultdict(list)
+    for entry_date, mood in stat_rows:
+        if mood is not None:
+            by_day[entry_date.date()].append(mood)
+    daily_mood = [{'date': day.isoformat(),
+                   'mood': round(sum(values) / len(values), 1),
+                   'entries': len(values)}
+                  for day, values in sorted(by_day.items(), reverse=True)][:limit]
+
+    return {
+        'timezone': TIMEZONE_NAME,
+        'as_of': iso(now_amsterdam()),
+        'full_text': bool(full_text),
+        'stats': {
+            'total_entries': len(stat_rows),
+            'days_written': days_written,
+            'entries_with_mood': len(moods),
+            'average_mood': round(sum(moods) / len(moods), 1) if moods else None,
+            'last_entry_at': iso(latest),
+            'days_since_last_entry': (now_amsterdam() - latest).days if latest else None,
+        },
+        'window': window,
+        'search': search,
+        'matched': matched,
+        'returned': len(rows),
+        'daily_mood': daily_mood,
+        'entries': [payload(entry) for entry in rows],
     }
 
 

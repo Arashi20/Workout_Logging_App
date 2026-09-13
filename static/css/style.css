@@ -1140,7 +1140,8 @@ tr:hover {
     .weight-tracker-container > h1:first-child,
     .exercises-container > h1:first-child,
     .discipline-container > h1:first-child,
-    .programs-container .programs-header h1 {
+    .programs-container .programs-header h1,
+    .journal-container .journal-header h1 {
         text-align: center;
     }
 
@@ -2424,6 +2425,14 @@ tr:hover {
     color: var(--primary-color);
 }
 
+/* Export lives in the header on wide screens and moves to a centered button at
+   the foot of the page on phones, where the header should be just the title. */
+.journal-export-footer {
+    display: none;
+    text-align: center;
+    margin-top: 2rem;
+}
+
 .journal-layout {
     display: grid;
     grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
@@ -2663,6 +2672,18 @@ tr:hover {
 }
 
 @media (max-width: 768px) {
+    .journal-header {
+        display: block;
+    }
+
+    .journal-header .journal-export {
+        display: none;
+    }
+
+    .journal-export-footer {
+        display: block;
+    }
+
     .journal-stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
