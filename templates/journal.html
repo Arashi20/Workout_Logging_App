@@ -120,6 +120,10 @@
                         data-offset="{{ page_size }}">Load more</button>
             </div>
             {% endif %}
+
+            <div class="journal-export-footer">
+                <a href="{{ url_for('export_journal') }}" class="btn btn-secondary">Export CSV</a>
+            </div>
         </div>
     </div>
 </div>
