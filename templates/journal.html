@@ -199,6 +199,62 @@
         });
     }
 
+    // Long entries are collapsed to a preview with a "Read more" toggle, so a
+    // page of entries stays scannable - on a phone the list sits under the
+    // editor, and a few long entries otherwise mean a lot of scrolling.
+    const PREVIEW_SLACK = 32; // px of overflow to tolerate before collapsing
+
+    function setupTruncation(card) {
+        const body = card.querySelector('.journal-entry-body');
+        if (!body || body.dataset.truncationChecked) return;
+        body.dataset.truncationChecked = '1';
+
+        // Collapse first, then compare: clientHeight is the preview height and
+        // scrollHeight the full text, so the difference is what's hidden.
+        body.classList.add('is-collapsed');
+        if (body.scrollHeight - body.clientHeight <= PREVIEW_SLACK) {
+            body.classList.remove('is-collapsed');
+            return;
+        }
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'journal-toggle';
+        toggle.textContent = 'Read more';
+        toggle.setAttribute('aria-expanded', 'false');
+        body.insertAdjacentElement('afterend', toggle);
+    }
+
+    if (list) {
+        list.addEventListener('click', (e) => {
+            const toggle = e.target.closest('.journal-toggle');
+            if (!toggle) return;
+            const card = toggle.closest('.journal-entry-card');
+            const body = card.querySelector('.journal-entry-body');
+            const collapsing = !body.classList.contains('is-collapsed');
+
+            body.classList.toggle('is-collapsed', collapsing);
+            toggle.textContent = collapsing ? 'Read more' : 'Show less';
+            toggle.setAttribute('aria-expanded', String(!collapsing));
+
+            // Collapsing a long entry can pull the card's top off-screen -
+            // put the reader back at the start of the entry they just closed.
+            if (collapsing && card.getBoundingClientRect().top < 0) {
+                card.scrollIntoView({ block: 'start' });
+            }
+        });
+
+        // Measure once the webfont is in, otherwise line heights shift after
+        // the check and short entries get a pointless toggle.
+        const measureAll = () =>
+            list.querySelectorAll('.journal-entry-card').forEach(setupTruncation);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(measureAll);
+        } else {
+            measureAll();
+        }
+    }
+
     // Paginated "Load more", mirroring the Discipline page's history loader.
     const button = document.getElementById('load-more');
     if (!button) return;
@@ -215,7 +271,11 @@
         fetch(url)
             .then((response) => response.json())
             .then((data) => {
-                data.entries.forEach((entry) => list.appendChild(buildCard(entry)));
+                data.entries.forEach((entry) => {
+                    const card = buildCard(entry);
+                    list.appendChild(card);
+                    setupTruncation(card); // must be in the DOM to measure
+                });
                 button.dataset.offset = data.next_offset;
                 if (data.has_more) {
                     button.disabled = false;

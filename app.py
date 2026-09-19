@@ -2404,16 +2404,22 @@ def journal():
     entries = rows[:JOURNAL_PAGE_SIZE]
 
     total_entries = _journal_query().count()
-    moods = [e.mood for e in _journal_query().filter(JournalEntry.mood.isnot(None)).all()]
-    avg_mood = round(sum(moods) / len(moods), 1) if moods else None
+
+    # Averaged in SQL - pulling every entry back just to average the mood would
+    # drag the whole journal (content included) into memory on each page load.
+    mood_avg = db.session.query(db.func.avg(JournalEntry.mood)).filter(
+        JournalEntry.user_id == current_user.id,
+        JournalEntry.mood.isnot(None)
+    ).scalar()
+    avg_mood = round(float(mood_avg), 1) if mood_avg is not None else None
 
     # Distinct days written on, so sporadic journalling still shows something useful.
     days_written = db.session.query(
         db.func.count(db.distinct(db.func.date(JournalEntry.entry_date)))
     ).filter(JournalEntry.user_id == current_user.id).scalar() or 0
 
-    last_entry = _journal_query().first()
-    days_since_last = (now_amsterdam() - last_entry.entry_date).days if last_entry else None
+    last_entry_date = _journal_query().with_entities(JournalEntry.entry_date).first()
+    days_since_last = (now_amsterdam() - last_entry_date[0]).days if last_entry_date else None
 
     return render_template('journal.html',
         entries=entries,
