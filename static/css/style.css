@@ -2603,6 +2603,45 @@ tr:hover {
     max-width: 70ch;
 }
 
+/* Long entries are collapsed to a preview so a page of them stays scannable -
+   especially on a phone, where the list sits below the editor. The height is a
+   variable so the mobile breakpoint can shorten it. */
+.journal-entry-body.is-collapsed {
+    --journal-preview-height: 14rem;
+    max-height: var(--journal-preview-height);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Fade the last couple of lines out, so it reads as "there is more" rather
+   than as text cut off mid-sentence. */
+.journal-entry-body.is-collapsed::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--card-bg));
+}
+
+.journal-toggle {
+    background: none;
+    border: none;
+    padding: 0.4rem 0;
+    margin-top: 0.5rem;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.journal-toggle:hover {
+    text-decoration: underline;
+}
+
 .journal-delete {
     background: none;
     border: none;
@@ -2690,6 +2729,12 @@ tr:hover {
 
     .journal-entry-card {
         padding: 1.15rem;
+    }
+
+    /* Shorter preview on a phone: the entry list starts below the editor, so
+       every collapsed card saves a screenful of scrolling. */
+    .journal-entry-body.is-collapsed {
+        --journal-preview-height: 9rem;
     }
 
     .journal-search {
