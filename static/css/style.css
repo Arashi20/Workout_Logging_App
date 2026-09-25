@@ -102,6 +102,19 @@ body {
     background-color: var(--bg-color);
 }
 
+/* Logout is a POST form (so another site can't log you out), styled as a link */
+.nav-logout-form {
+    display: inline;
+    margin: 0;
+}
+
+.nav-logout-btn {
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+}
+
 /* Container */
 .container {
     max-width: 1200px;

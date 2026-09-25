@@ -36,7 +36,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash
 
 import config
-from models import User
+from models import User, db
 
 oauth_bp = Blueprint('oauth', __name__)
 
@@ -168,14 +168,35 @@ def redirect_uri_allowed(client, redirect_uri):
 # Tokens
 # --------------------------------------------------------------------------
 
-def issue_access_token(user_id, client_id):
+def password_fingerprint(user):
+    """Short digest of the user's password hash, baked into every grant.
+
+    Changing the password changes this, which invalidates every code and token
+    issued under the old one - so a leaked refresh token dies with the password.
+    """
+    return hashlib.sha256(user.password.encode()).hexdigest()[:16]
+
+
+def grant_user(payload):
+    """The user a grant belongs to, or None if they're gone or changed password."""
+    user = db.session.get(User, payload.get('user_id'))
+    if user is None:
+        return None
+    if not hmac.compare_digest(str(payload.get('fp', '')), password_fingerprint(user)):
+        return None
+    return user
+
+
+def issue_access_token(user, client_id):
     return _serializer('mcp-oauth-access').dumps(
-        {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'access'})
+        {'user_id': user.id, 'fp': password_fingerprint(user), 'client_id': client_id,
+         'scope': READ_SCOPE, 'type': 'access'})
 
 
-def issue_refresh_token(user_id, client_id):
+def issue_refresh_token(user, client_id):
     return _serializer('mcp-oauth-refresh').dumps(
-        {'user_id': user_id, 'client_id': client_id, 'scope': READ_SCOPE, 'type': 'refresh'})
+        {'user_id': user.id, 'fp': password_fingerprint(user), 'client_id': client_id,
+         'scope': READ_SCOPE, 'type': 'refresh'})
 
 
 def verify_access_token(token):
@@ -197,9 +218,10 @@ def verify_refresh_token(token):
     return payload if payload.get('type') == 'refresh' else None
 
 
-def issue_authorization_code(user_id, client_id, redirect_uri, code_challenge):
+def issue_authorization_code(user, client_id, redirect_uri, code_challenge):
     return _serializer('mcp-oauth-code').dumps({
-        'user_id': user_id,
+        'user_id': user.id,
+        'fp': password_fingerprint(user),
         'client_id': client_id,
         'redirect_uri': redirect_uri,
         'code_challenge': code_challenge,
@@ -223,7 +245,11 @@ def consume_authorization_code(code):
 def pkce_matches(code_challenge, code_verifier):
     if not code_challenge:
         return False
-    digest = hashlib.sha256(code_verifier.encode('ascii')).digest()
+    try:
+        verifier = code_verifier.encode('ascii')
+    except UnicodeEncodeError:
+        return False
+    digest = hashlib.sha256(verifier).digest()
     expected = urlsafe_b64encode(digest).rstrip(b'=').decode()
     return hmac.compare_digest(expected, code_challenge)
 
@@ -288,13 +314,22 @@ def register():
     if not isinstance(redirect_uris, list) or not redirect_uris:
         return jsonify({'error': 'invalid_redirect_uri',
                         'error_description': 'redirect_uris is required'}), 400
+    if len(redirect_uris) > 10:
+        return jsonify({'error': 'invalid_redirect_uri',
+                        'error_description': 'Too many redirect_uris'}), 400
     for uri in redirect_uris:
+        if not isinstance(uri, str):
+            return jsonify({'error': 'invalid_redirect_uri',
+                            'error_description': 'redirect_uris must be strings'}), 400
         parsed = urlparse(uri)
         if parsed.scheme != 'https' and parsed.hostname not in ('localhost', '127.0.0.1'):
             return jsonify({'error': 'invalid_redirect_uri',
                             'error_description': f'redirect_uri must use https: {uri}'}), 400
 
-    client = register_client(redirect_uris, body.get('client_name', 'MCP client'))
+    client_name = body.get('client_name')
+    if not isinstance(client_name, str) or not client_name.strip():
+        client_name = 'MCP client'
+    client = register_client(redirect_uris, client_name[:100])
     return jsonify({
         'client_id': client['client_id'],
         'client_secret': client['client_secret'],
@@ -457,7 +492,7 @@ def authorize():
                                 error='Invalid username or password', status=401)
 
     clear_login_failures()
-    result = {'code': issue_authorization_code(user.id, client_id, redirect_uri, code_challenge)}
+    result = {'code': issue_authorization_code(user, client_id, redirect_uri, code_challenge)}
     if state:
         result['state'] = state
     return redirect(f'{redirect_uri}?{urlencode(result)}')
@@ -506,7 +541,6 @@ def token():
             return _token_error('invalid_grant', 'redirect_uri does not match the request')
         if not code_verifier or not pkce_matches(payload['code_challenge'], code_verifier):
             return _token_error('invalid_grant', 'PKCE verification failed')
-        user_id = payload['user_id']
 
     elif grant_type == 'refresh_token':
         payload = verify_refresh_token(request.form.get('refresh_token', ''))
@@ -514,19 +548,20 @@ def token():
             return _token_error('invalid_grant', 'Refresh token is invalid or expired')
         if payload['client_id'] != client_id:
             return _token_error('invalid_grant', 'Refresh token was issued to a different client')
-        user_id = payload['user_id']
 
     else:
         return _token_error('unsupported_grant_type', 'Use authorization_code or refresh_token')
 
-    if User.query.get(user_id) is None:
-        return _token_error('invalid_grant', 'The account for this grant no longer exists')
+    user = grant_user(payload)
+    if user is None:
+        return _token_error('invalid_grant',
+                            'The account for this grant no longer exists or its password changed')
 
     response = jsonify({
-        'access_token': issue_access_token(user_id, client_id),
+        'access_token': issue_access_token(user, client_id),
         'token_type': 'Bearer',
         'expires_in': ACCESS_TOKEN_TTL,
-        'refresh_token': issue_refresh_token(user_id, client_id),
+        'refresh_token': issue_refresh_token(user, client_id),
         'scope': READ_SCOPE,
     })
     response.headers['Cache-Control'] = 'no-store'
