@@ -17,6 +17,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import click
 import pytz
+from security import LoginThrottle, check_same_origin, set_security_headers
 
 load_dotenv()
 
@@ -67,6 +68,20 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 # Session timeout: 20 minutes of inactivity
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=20)
+# Session cookie hardening. SameSite=Lax keeps the browser from sending the
+# cookie on cross-site form posts (CSRF); Secure keeps it off plain http once
+# deployed behind Railway's https.
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_SECURE'] = IS_PRODUCTION
+# Cap request bodies so an oversized POST can't exhaust memory.
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+
+app.before_request(check_same_origin)
+app.after_request(set_security_headers)
 
 db.init_app(app)
 
@@ -123,6 +138,21 @@ def resync_id_sequence(model):
         return False
 
 
+DEFAULT_DEV_PASSWORD = 'admin123'
+
+
+def admin_password():
+    """ADMIN_PASSWORD, or the dev default only for local sqlite runs.
+
+    In production a publicly known default would hand the account to anyone,
+    so there it must be set explicitly.
+    """
+    password = os.getenv('ADMIN_PASSWORD')
+    if password:
+        return password
+    return None if IS_PRODUCTION else DEFAULT_DEV_PASSWORD
+
+
 # Auto-initialize database and admin user on startup
 def init_app():
     """Initialize database tables and create admin user if needed"""
@@ -139,16 +169,25 @@ def init_app():
         
         # Create admin user if it doesn't exist
         username = os.getenv('ADMIN_USERNAME', 'admin')
-        password = os.getenv('ADMIN_PASSWORD', 'admin123')
-        
+
         user = User.query.filter_by(username=username).first()
         if not user:
+            password = admin_password()
+            if password is None:
+                app.logger.error(
+                    'ADMIN_PASSWORD is not set, so no admin user was created. '
+                    'Set it to a strong password and restart.')
+                return
             user = User(username=username, password=generate_password_hash(password))
             db.session.add(user)
             db.session.commit()
             app.logger.info(f'Admin user created: {username}')
         else:
             app.logger.info(f'Admin user already exists: {username}')
+            if check_password_hash(user.password, DEFAULT_DEV_PASSWORD):
+                app.logger.warning(
+                    'SECURITY: the admin account still uses the default password '
+                    '"%s". Change it now.', DEFAULT_DEV_PASSWORD)
 
 # Run initialization
 init_app()
@@ -281,27 +320,45 @@ def offline():
     return render_template('offline.html')
 
 
+login_throttle = LoginThrottle()
+# Checked against when the username doesn't exist, so a wrong username takes
+# as long as a wrong password and response timing doesn't reveal which it was.
+_DUMMY_PASSWORD_HASH = generate_password_hash('not-a-real-password')
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        locked_for = login_throttle.remaining()
+        if locked_for:
+            # Don't even check the password while locked out, so the throttle
+            # can't be worn down by continued guessing.
+            flash(f'Too many failed attempts. Try again in {locked_for // 60 + 1} minute(s).', 'error')
+            return render_template('login.html'), 429
+
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
         
         user = User.query.filter_by(username=username).first()
+        password_ok = check_password_hash(user.password if user else _DUMMY_PASSWORD_HASH, password)
         
-        if user and check_password_hash(user.password, password):
+        if user and password_ok:
+            login_throttle.reset()
+            session.clear()
             login_user(user)
             session.permanent = True
             return redirect(url_for('index'))
         else:
+            login_throttle.record_failure()
             flash('Invalid username or password', 'error')
+            return render_template('login.html'), 401
     
     return render_template('login.html')
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
@@ -2770,7 +2827,9 @@ def export_protein_logs():
 def _create_admin_user():
     """Helper function to create admin user."""
     username = os.getenv('ADMIN_USERNAME', 'admin')
-    password = os.getenv('ADMIN_PASSWORD', 'admin123')
+    password = admin_password()
+    if password is None:
+        raise click.ClickException('Set ADMIN_PASSWORD before creating the admin user.')
     
     user = User(username=username, password=generate_password_hash(password))
     db.session.add(user)

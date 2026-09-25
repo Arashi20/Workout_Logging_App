@@ -44,11 +44,11 @@ def resolve_token(token):
         return api_user()
 
     if config.oauth_enabled():
-        from oauth import verify_access_token
+        from oauth import grant_user, verify_access_token
 
         claims = verify_access_token(token)
         if claims is not None:
-            return User.query.get(claims['user_id'])
+            return grant_user(claims)
 
     return None
 
