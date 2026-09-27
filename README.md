@@ -81,7 +81,7 @@ This application is designed to be easily deployed on Railway with PostgreSQL.
 3. Set environment variables in Railway:
    - `SECRET_KEY`: A random secret key
    - `ADMIN_USERNAME`: Your desired username
-   - `ADMIN_PASSWORD`: Your desired password
+   - `ADMIN_PASSWORD`: Your desired password (required in production — without it no admin account is created)
    - `DATABASE_URL`: Automatically set by Railway PostgreSQL
 
 4. Deploy from GitHub:
