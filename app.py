@@ -1648,7 +1648,7 @@ WORKOUT_PROGRAMS = [
         'description': (
             'High-intensity 5-day split built around single working sets taken to '
             'failure. Each muscle group is trained twice per week across Upper and '
-            'Lower days with two active rest days for neck & face work.'
+            'Lower days with two full rest days; neck work is built into Days 1 and 6.'
         ),
         'note': (
             '1 lightweight warmup set before any of the sets '
@@ -1657,13 +1657,14 @@ WORKOUT_PROGRAMS = [
         'days': [
             {
                 'label': 'Day 1: Upper',
-                'avg_time': '30–45 min',
+                'avg_time': '35–50 min',
                 'rest': False,
                 'exercises': [
                     {'name': 'Seated Machine Row',          'prescription': '1× to failure'},
                     {'name': 'Incline Dumbbell Press',       'prescription': '1× to failure'},
                     {'name': 'Pec Deck',                     'prescription': '1× to failure'},
                     {'name': 'Lateral Raises',               'prescription': '1× dropset to failure'},
+                    {'name': 'Lying Neck Curl',              'prescription': '3× to failure'},
                     {'name': 'Uphill Treadmill',             'prescription': '5–10 min', 'optional': True},
                 ],
             },
@@ -1682,11 +1683,9 @@ WORKOUT_PROGRAMS = [
             },
             {
                 'label': 'Day 3: Rest',
-                'avg_time': '~30 min',
+                'avg_time': '',
                 'rest': True,
-                'exercises': [
-                    {'name': 'Neck + Face Exercises', 'prescription': ''},
-                ],
+                'exercises': [],
             },
             {
                 'label': 'Day 4: Upper + Core',
@@ -1715,7 +1714,7 @@ WORKOUT_PROGRAMS = [
             },
             {
                 'label': 'Day 6: Arms & Delts + Core',
-                'avg_time': '40–45 min',
+                'avg_time': '45–55 min',
                 'rest': False,
                 'exercises': [
                     {'name': 'Hanging Leg Raises',                   'prescription': '2× to failure'},
@@ -1723,16 +1722,16 @@ WORKOUT_PROGRAMS = [
                     {'name': 'EZ Bar Skull Crusher',                 'prescription': '1× to failure'},
                     {'name': 'Lateral Raises',                       'prescription': '1× dropset to failure'},
                     {'name': 'Reverse Pec Deck',                     'prescription': '1× to failure'},
+                    {'name': 'Dumbbell Shrugs',                      'prescription': '2× to failure'},
+                    {'name': 'Reverse Neck Curl',                    'prescription': '3× to failure'},
                     {'name': 'Reverse Grip Barbell Wrist Curl',      'prescription': '1× dropset to failure'},
                 ],
             },
             {
                 'label': 'Day 7: Rest',
-                'avg_time': '~30 min',
+                'avg_time': '',
                 'rest': True,
-                'exercises': [
-                    {'name': 'Neck + Face Exercises', 'prescription': ''},
-                ],
+                'exercises': [],
             },
         ],
     },
