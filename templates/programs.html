@@ -32,7 +32,7 @@
                     <div class="day-card {% if day.rest %}day-rest{% endif %}">
                         <div class="day-header">
                             <span class="day-label">{{ day.label }}</span>
-                            <span class="day-time">⏱ {{ day.avg_time }}</span>
+                            {% if day.avg_time %}<span class="day-time">⏱ {{ day.avg_time }}</span>{% endif %}
                         </div>
                         <ul class="exercise-list">
                             {% for ex in day.exercises %}
