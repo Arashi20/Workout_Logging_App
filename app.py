@@ -192,6 +192,18 @@ def init_app():
 # Run initialization
 init_app()
 
+def normalize_set_weight(exercise, weight):
+    """Store "no extra load" on a bodyweight exercise as 0.0, never NULL.
+
+    The add/edit forms leave the "Extra Weight (kg)" field blank for plain
+    bodyweight sets, which used to be saved as NULL while a typed "0" was saved
+    as 0.0. NULL-weight sets were then skipped by the PR check.
+    """
+    if weight is None and exercise.is_bodyweight and not exercise.is_cardio:
+        return 0.0
+    return weight
+
+
 def effective_volume(log):
     """Return effective volume for a set, accounting for bodyweight exercises."""
     if log.reps is None:
@@ -712,7 +724,7 @@ def add_set():
             exercise_id=exercise.id,
             set_number=set_number,
             reps=reps_int,
-            weight=weight_float,
+            weight=normalize_set_weight(exercise, weight_float),
             bodyweight_kg=bodyweight_kg_float,
             set_type=set_type
         )
@@ -746,8 +758,10 @@ def finish_workout():
             # Process working sets from this session and update PRs
             for log in all_logs:
                 if log.set_type == 'working':
-                    if log.weight is not None:
-                        update_pr(current_user.id, log.exercise_id, weight=log.weight, reps=log.reps)
+                    # Coalesce NULL weight on bodyweight sets (older rows) so they still count.
+                    weight = normalize_set_weight(log.exercise, log.weight)
+                    if weight is not None:
+                        update_pr(current_user.id, log.exercise_id, weight=weight, reps=log.reps)
                     elif log.calories is not None:
                         update_pr(current_user.id, log.exercise_id, calories=log.calories, time_minutes=log.time_minutes)
             
@@ -898,7 +912,7 @@ def edit_set(log_id):
                 workout_log.bodyweight_kg = None
 
         workout_log.reps = reps_int
-        workout_log.weight = weight_float
+        workout_log.weight = normalize_set_weight(exercise, weight_float)
 
     workout_log.set_type = set_type
     db.session.commit()
@@ -920,7 +934,7 @@ def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_
         # Cardio PR: tracked by calories burned — find current best
         best = PersonalRecord.query.filter_by(
             user_id=user_id, exercise_id=exercise_id
-        ).order_by(PersonalRecord.calories.desc()).first()
+        ).order_by(PersonalRecord.calories.desc().nullslast()).first()
 
         if not best or best.calories is None or calories > best.calories:
             pr = PersonalRecord(
@@ -935,7 +949,7 @@ def update_pr(user_id, exercise_id, weight=None, reps=None, calories=None, time_
         # Strength PR: tracked by weight lifted, then reps — find current best
         best = PersonalRecord.query.filter_by(
             user_id=user_id, exercise_id=exercise_id
-        ).order_by(PersonalRecord.weight.desc(), PersonalRecord.reps.desc()).first()
+        ).order_by(PersonalRecord.weight.desc().nullslast(), PersonalRecord.reps.desc().nullslast()).first()
 
         is_better = (
             not best
