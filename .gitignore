@@ -22,5 +22,3 @@ cookies.txt
 genome_Arash_Mirshahi_Full.txt
 .claude
 
-# Local DB backups written by scripts/backfill_bodyweight_prs.py
-backup_*.json
